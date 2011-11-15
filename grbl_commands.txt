@@ -1,0 +1,33 @@
+
+
+
+
+flash the device:
+  /Applications/Arduino.app/Contents/Resources/Java/hardware/tools/avr/bin/avrdude -C/Applications/Arduino.app/Contents/Resources/Java/hardware/tools/avr/etc/avrdude.conf -pm328p -cstk500v1 -P /dev/tty.usbmodem1d11 -b115200 -D -Uflash:w:grbl_0_6b_atmega328p_16mhz_9600.hex 
+
+
+I wanted to be able to echo commands to screen
+  stty -f /dev/tty.usbmodem1d11 cs8 9600 ignbrk -brkint -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts
+
+???
+  > stty -f /dev/ttyU0.init -icanon -isig -echo echoe echok echoke echoctl -icrnl -ixany -imaxbel ignpar -opost -onlcr -oxtabs cs8 -parenb -hupcl clocal
+
+
+screen -t arduino /dev/tty.usbmodem1d11 9600,cs8,echo,icrnl,echonl
+
+ # - 012345 6789    
+ 0 - ?10000 0010    000001
+ 1 - ?10000 0010    000010
+ 2 - ?10000 0010    000011
+ 3 - ?10000 0010    000100
+ 4 - ?11000 0010    000101
+ 7 - ?11000 0010    000110
+ 6 - ?11000 0010    000111
+ 8 - ?10100 0010    001000
+15 - ?11100 0010    001111
+16 - ?10010 0010    010000
+23 - ?11010 0010    010111
+24 - ?10110 0010    011000
+27 - ?10110 0010    011100
+31 - ?11110 0010    011111
+32 - ?10000 0010    100000
