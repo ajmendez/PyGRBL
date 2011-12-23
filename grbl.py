@@ -3,88 +3,116 @@
 ## Mendez
 ## [2011.12.11]
 ####################
-import serial, time, readline, sys, getopt, curses
+import serial, time, readline, sys, getopt, curses, socket, datetime
+import fakeserial
+
+# Watching server
+HOST, PORT = "localhost", 3225
 
 
 def gdebug(getargv=False):
-    DEBUG=False
-    options,remainder = getopt.gnu_getopt(sys.argv[1:], 'd')
-    for opt, arg in options:
-        if opt == '-d':
-            DEBUG=True
-    if getargv:
-        remainder.insert(0,sys.argv[0])
-        return (DEBUG, remainder)
-    return DEBUG
+  '''g(rbl)debug function, allows me to return either the debug bool/argv.'''
+  DEBUG=False
+  WATCH=False
+  options,remainder = getopt.gnu_getopt(sys.argv[1:], 'dw')
+  for opt, arg in options:
+    if opt == '-d':
+      DEBUG=True
+    if opt == '-w':
+      WATCH=True
+  if getargv:
+    remainder.insert(0,sys.argv[0])
+    return (DEBUG, WATCH, remainder)
+  return (DEBUG, WATCH)
 
 
-
-class fakeserial():
-    '''I need a a debug serial object.'''
-    def __init__(self):
-        '''init the fake serial and print out ok'''
-        self.waiting=1  # If we are waiting
-        self.ichar=0    # index of the character that we are on.
-        self.msg='ok'   # the message that we print when we get any command
-    
-    def __getattr__(self, name):
-        print 'DEBUG SERIAL: %s'%(name)
-        return self.p
-    def p(self,x=None,y=None):
-        '''Lambda probably makes this better.'''
-        pass
-    def write(self, x):
-        ''' this is pretty noisy so lets ignore it quietly.'''
-        pass
-    def read(self, n=1):
-        '''Return the message n characters at a time.'''
-        if self.ichar < len(self.msg):
-            out = self.msg[self.ichar:self.ichar+n]
-            self.ichar += n
-        else:
-            self.ichar = 0
-            self.waiting = 0
-            out='\n'
-        return out
-    
-    def inWaiting(self):
-        '''Are we done pushing out a msg? '''
-        out = self.waiting
-        if self.waiting == 0:
-            self.waiting = 1
-        return out
-
-
-class grbl:
-  def __init__(self, dev=None, speed=None, debug=False, waittime=0.5):
-    '''Starts the Serial device'''
+class Grbl:
+  def __init__(self, dev=None, speed=None, debug=False, watch=False, waittime=0.5):
+    '''Starts the Serial/FakeSerial device'''
     if not dev: dev='/dev/tty.usbmodem1d11'
     if not speed: speed=9600
     self.waittime = waittime
+    self.version = 0.1
+    self.title = '[pyGRBL v%3.1f]'%(self.version)
+    self.starttime = datetime.datetime.now()
     self.debug = debug
-    
-    if debug:
-       self.waittime=0.1
+    self.watch = watch
     
     # Start the serial port
-    if debug:
-        self.s = fakeserial()
+    if self.debug:
+      self.waittime=0.01
+      self.s = fakeserial.Serial()
     else:
-        self.s = serial.Serial(dev,speed)
+      self.s = serial.Serial(dev,speed)
+      self.s.open()
+      self.s.isOpen()
+      # Wake up grbl
+      self.s.write("\r\n\r\n")
+      time.sleep(1)   # Wait for grbl to initialize
+      self.s.flushInput()  # Flush startup text in serial input
     
-    self.s.open()
-    self.s.isOpen()
+    if self.watch:
+      # tmp_msg = "(Test Connection)"
+      # self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+      # sock.sendto(tmp_msg, (HOST, PORT))
+      # print "Sent:     {}".format(tmp_msg)
+      # print "Received: {}".format(sock.recv(1024))
+      self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      try:
+        self.sock.connect((HOST, PORT))
+        self.sock.send("(Connection Test)")
+      except:
+        tmp = raw_input("Could not connect to server. Press [Enter] to continue.")
+        self.watch = False
+        self.sock.close()
+        
+              
+          
+  def quit(self):
+    '''Shuts down the system'''
+    self.s.close()
+    if self.watch:
+      self.sock.close()
+    if self.scr:
+      curses.endwin()
+  
+  def screen_title(self,title=None):
+    '''Clears the window and setups a title'''
+    if not title:
+      title = self.title
+    self.scr.clear()
+    self.scr.border(1)
+    self.scr.addstr(0,2,title)
+    self.scr.refresh()
+  def screen(self):
+    '''Initialize a curses screen.'''
+    self.scr = curses.initscr()
+    self.screen_title()
     
-    # Wake up grbl
-    self.s.write("\r\n\r\n")
-    time.sleep(1)   # Wait for grbl to initialize
-    self.s.flushInput()  # Flush startup text in serial input
-    
+  def origin(self):
+    '''Make sure to start with everything zeroed out.'''
+    self.screen()
+    cmd=raw_input()
+    self.quit()
+    # axes = ['x','y','z']
+    # self.run('G21') # milimeters
+    # self.run('G90') # Absolute
+    # for axis in axes:
+    #   print 'For axis %s use the left and right arrow keys to locate the zero then press [enter]'%(axis)
+  
+  
   def run(self, cmd, echocmd=False, cmdprefix='Sending'):
     '''Run a command: '''
     if echocmd:
       print '%s: %s'%(cmdprefix,cmd)
     self.s.write(cmd+'\n')
+    if self.watch:
+      try:
+        self.sock.send(cmd+'\n')
+      except:
+        tmp = raw_input("Watch Server Gone. Press [Enter] to continue.")
+        self.watch = False
+      
     out=''
     time.sleep(self.waittime)
     while self.s.inWaiting() > 0:
@@ -92,24 +120,26 @@ class grbl:
     if out != '':
       print '\n'.join([' |  ' + o for o in out.splitlines()])
   
-  def quit(self):
-    '''Shuts down the system'''
-    self.s.close()
+  def timeleft(self,i,total,totaltime=False):
+    '''From the current step, and total steps, estimate the time left'''
+    if i == 0:
+      return "Unknown"
+    # there has to be a better way
+    delta = (datetime.datetime.now() - self.starttime)
+    timeleft = (total-i)/float(i)*delta.total_seconds()
+    if totaltime:
+      timeleft = delta.total_seconds()
+    
+    if timeleft < 60:
+      return "%d sec"%(timeleft)
+    elif (timeleft/60.) < 60:
+      return "%3.1f min"%(timeleft/60.)
+    elif (timeleft/3600.) < 24:
+      return "%3.1f hr"%(timeleft/3600.)
+    else:
+      return "%d days!!!"%(timeleft/(3600*24.))
+    
   
-  def origin(self):
-    '''Make sure to start with everything zeroed out.'''
-    # self.screen = curses.initscr()
-    
-    axes = ['x','y','z']
-    self.run('G21') # milimeters
-    self.run('G90') # Absolute
-    for axis in axes:
-      print 'For axis %s use the left and right arrow keys to locate the zero then press [enter]'%(axis)
-      
-    # 9:21 - 6128
-    # 9:25 - 6772
-    #~200 lines per minute
-    
   def runfile(self, gfile=None):
     '''Run a specific G-code file'''
     f = open(gfile,'r')
@@ -118,9 +148,12 @@ class grbl:
     for i,line in enumerate(lines):
       l = line.strip() # Strip all EOL characters for streaming
       p = i/float(len(lines))*100
-      self.run(l, echocmd=True, cmdprefix='[%2d]Sending'%(p))
+      t = self.timeleft(i,len(lines))
+      self.run(l, echocmd=True, cmdprefix='[%2d%%][%s]Sending'%(p,t))
     
     # Wait here until grbl is finished to close serial port and file.
+    print "%s ran for %s"%(self.title,
+                           self.timeleft(len(lines),len(lines),totaltime=True))
     raw_input(">>>  Press <Enter> to finish  <<<")
     
     

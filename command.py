@@ -2,10 +2,10 @@
 """\
 Simple g-code debuging tool
 """
-from grbl import grbl, gdebug
-DEBUG = gdebug()
+from grbl import Grbl, gdebug
+DEBUG,WATCH = gdebug()
 
-g = grbl(debug=DEBUG)
+g = Grbl(debug=DEBUG, watch=WATCH)
 
 while True:
     x = raw_input('cmd> ')

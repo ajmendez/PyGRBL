@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """\
-Simple g-code zeroing script
+Simple g-code find the origin script
 """
-from grbl import grbl, gdebug
+from grbl import Grbl, gdebug
 
 DEBUG = gdebug()
-g = grbl(debug=DEBUG)
+g = Grbl(debug=DEBUG)
 
 g.origin()
