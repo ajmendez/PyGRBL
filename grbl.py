@@ -40,7 +40,7 @@ class Grbl:
     
     # Start the serial port
     if self.debug:
-      self.waittime=0.01
+      self.waittime=0.05
       self.s = fakeserial.Serial()
     else:
       self.s = serial.Serial(dev,speed)
