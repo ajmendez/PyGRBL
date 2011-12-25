@@ -26,6 +26,61 @@ def gdebug(getargv=False):
   return (DEBUG, WATCH)
 
 
+class Screen(object):
+  def __init__(self, version=None, title=None, raw=False):
+    '''initalize a curses screen using the wrapper'''
+    if not version: version=0.1
+    if not title: title='pyScreen v%3.1f'%(version)
+    self.version = version
+    self.title = title
+    self.raw = raw
+    curses.wrapper(self.begin)
+  
+  def begin(self, screen):
+    '''Get some basic values and start the main loop'''
+    self.screen = screen
+    self.height, self.width = screen.getmaxyx()
+    self.offsety, self.offsetx = -self.height / 2, -self.width / 2
+    self.make_title(clear=True)
+    if self.raw: 
+      self.screen.addstr(3,1,'RAW')
+      curses.raw()
+
+
+    self.main()
+  
+  def update(self):
+    pass
+  
+  def main(self):
+    keyfunction = self.keyfunction
+    while 1:
+      key = self.screen.getch()
+      if self.key_exit(key): pass
+      elif hasattr(self,'keyfunction') & self.keyfunction(key): self.update()
+      elif key == ord('t'): self.make_title(title='test')
+      
+  
+  def key_exit(self,key):
+    if (key == curses.KEY_EXIT or
+        key == curses.KEY_SEXIT or
+        key == curses.KEY_CANCEL or 
+        key == ord('q')):
+      sys.exit()
+  
+  def make_title(self,title=None, clear=False):
+    '''Clears the window and setups a title'''
+    if not title: title = self.title
+    if clear:
+      self.screen.clear()
+      self.screen.border()
+    else:
+      self.screen.hline(0,1,curses.ACS_HLINE,self.width-2)
+    self.screen.addstr(0,2,'[%s]'%(title))
+    self.screen.refresh()
+    
+
+
 class Grbl:
   def __init__(self, dev=None, speed=None, debug=False, watch=False, waittime=0.5):
     '''Starts the Serial/FakeSerial device'''
@@ -33,7 +88,7 @@ class Grbl:
     if not speed: speed=9600
     self.waittime = waittime
     self.version = 0.1
-    self.title = '[pyGRBL v%3.1f]'%(self.version)
+    self.title = 'pyGRBL v%3.1f'%(self.version)
     self.starttime = datetime.datetime.now()
     self.debug = debug
     self.watch = watch
@@ -52,11 +107,6 @@ class Grbl:
       self.s.flushInput()  # Flush startup text in serial input
     
     if self.watch:
-      # tmp_msg = "(Test Connection)"
-      # self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-      # sock.sendto(tmp_msg, (HOST, PORT))
-      # print "Sent:     {}".format(tmp_msg)
-      # print "Received: {}".format(sock.recv(1024))
       self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       try:
         self.sock.connect((HOST, PORT))
@@ -65,40 +115,27 @@ class Grbl:
         tmp = raw_input("Could not connect to server. Press [Enter] to continue.")
         self.watch = False
         self.sock.close()
-        
-              
-          
+  
+  def write(self, message):
+    '''if we are using a nice litle curses app, lets figure this out.'''
+    if not self.scr:
+      print message
+    else:
+      pass
+  
   def quit(self):
     '''Shuts down the system'''
     self.s.close()
     if self.watch:
       self.sock.close()
-    if self.scr:
-      curses.endwin()
-  
-  def screen_title(self,title=None):
-    '''Clears the window and setups a title'''
-    if not title:
-      title = self.title
-    self.scr.clear()
-    self.scr.border(1)
-    self.scr.addstr(0,2,title)
-    self.scr.refresh()
-  def screen(self):
-    '''Initialize a curses screen.'''
-    self.scr = curses.initscr()
-    self.screen_title()
+
+
     
   def origin(self):
     '''Make sure to start with everything zeroed out.'''
     self.screen()
     cmd=raw_input()
     self.quit()
-    # axes = ['x','y','z']
-    # self.run('G21') # milimeters
-    # self.run('G90') # Absolute
-    # for axis in axes:
-    #   print 'For axis %s use the left and right arrow keys to locate the zero then press [enter]'%(axis)
   
   
   def run(self, cmd, echocmd=False, cmdprefix='Sending'):
