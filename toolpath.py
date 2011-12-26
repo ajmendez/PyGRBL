@@ -56,12 +56,11 @@ class ToolPath(object):
       if move < median(distances):
         index = self.getclosestindex(self.previous,x,y)
         if index > 0:
-          a = self.previous[:index]
           b = self.previous[index:]
-          b.extend(a)
+          b.extend(self.previous[:index])
           self.previous = b
           print index
-          print len(a), len(b), len(self.previous)
+          print len(b), len(self.previous)
         # while index < len(self.previous):
         #   self.previous.insert(0, self.previous.pop())
     return self.previous[0]

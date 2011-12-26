@@ -30,12 +30,13 @@ GCODE_MILL = '%s X'%(MILL)
 class Paths(list):
   def getclosestpath(self,x=0.0,y=0.0):
     '''pops the closest path from the list'''
-    location = [item.startingpoint(x,y)[0:2] for item in self]
-    distances = [item.distance(x,y, x2,y2) for x2,y2 in location]
-    mindistance = min(distances)
-    index = distances.index(mindistance)
-    if distances.count(mindistance) > 1: 
-      pass # I should error here
+    location = [item.startingpoint(x,y, shuffle=True) for item in self]
+    index = ToolPath().getclosestindex(location,x,y)
+    # distances = [item.distance(x,y, x2,y2) for x2,y2 in location]
+    # mindistance = min(distances)
+    # index = distances.index(mindistance)
+    # if distances.count(mindistance) > 1: 
+    #   pass # I should error here
     return self.pop(index)
   
   @classmethod
