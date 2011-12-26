@@ -1,4 +1,4 @@
-import curses
+import curses, datetime
 
 class CmdLine(object):
   def __init__(self,height, width, y, x, state='cmd',history=None):
@@ -10,6 +10,7 @@ class CmdLine(object):
     self.textwin = self.window.subwin(height-2, width-self.wx, y+self.wy, x+self.wx)
     self.history = history
     self.prompt = ' >  '
+    self.message =''
     self.info = self.prompt
   
   def refresh(self):
@@ -17,6 +18,7 @@ class CmdLine(object):
     self.window.addstr(0,1,' %s '%self.state.upper())
     self.window.hline(1,1, ' ', self.width-2)
     self.window.addstr(1,1, self.info)
+    self.updatetime()
     self.window.refresh()
     # self.textwin.refresh()
   
@@ -55,11 +57,18 @@ class CmdLine(object):
       text = box.edit(self.validator)
     return text.strip()
   
+  def updatetime(self, message=None):
+    if message: self.message = message +' '
+    self.updated = datetime.datetime.now()
+    text = '%s%s'%(self.message, self.updated.strftime("%y.%m.%d %H.%M.%S"))
+    self.window.hline(2,self.width-len(text)-5,curses.ACS_HLINE, len(text)+4)
+    self.window.addstr(2,self.width-len(text)-1,text)
+  
   def progressbar(self, p):
     attr = curses.color_pair(3)
-    length = self.width*3/4
+    length = self.width/2#*3/4
     current = int(p*length)
     self.window.addstr(0,(self.width-length)/2,'[',attr)
     self.window.addstr(0,(self.width-length)/2+length+1,']',attr)
     self.window.hline(0,(self.width-length)/2+1,' ',length)
-    self.window.hline(0,(self.width-length)/2+1, '#',current+2,attr)
+    self.window.hline(0,(self.width-length)/2+1, '#',current+1,attr)

@@ -2,6 +2,8 @@ class ToolPath(object):
   def __init__(self, x=0.0, y=0.0, z=0.0, maxpoints=10000):
     self.maxpoints = maxpoints
     self.x, self.y, self.z = x, y, z
+    self.shiftmove = 0.1
+    self.move = 0.01
     self.previous = []
     self.save()
   

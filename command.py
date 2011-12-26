@@ -3,7 +3,7 @@
 Simple g-code debuging tool
 """
 from grbl import Grbl
-from commandscreen import CommandScreen
+from cmdscreen import CmdScreen
 
 if __name__ == "__main__":
   G = Grbl()
@@ -16,4 +16,4 @@ if __name__ == "__main__":
       else:
         G.run(x)
   else:
-    s = CommandScreen(G)
+    s = CmdScreen(G)
