@@ -23,7 +23,7 @@ def gdebug(getargv=False):
   DEBUG=False
   WATCH=False
   BASIC=False
-  options,remainder = getopt.gnu_getopt(sys.argv[1:], 'dw')
+  options,remainder = getopt.gnu_getopt(sys.argv[1:], 'dwb')
   for opt, arg in options:
     if opt == '-d':
       DEBUG=True

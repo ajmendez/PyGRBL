@@ -29,15 +29,16 @@ class CmdLine(object):
   
   def run(self, cmd):
     valueattr = curses.color_pair(3)
-    if '!!' in cmd: attr = curses.color_pair(2)
-    else: attr = curses.color_pair(1)
-    
     if hasattr(self, 'hook_fcn'):
       value = self.hook_fcn(cmd)
       self.history.write(value, attr=valueattr)
     else:
       cmd = "Not Hooked : "+cmd
-      
+    self.echo(cmd)
+  
+  def echo(self, cmd):
+    if '!!' in cmd: attr = curses.color_pair(2)
+    else: attr = curses.color_pair(1)
     self.history.write(cmd, attr=attr)
     self.history.refresh()
   

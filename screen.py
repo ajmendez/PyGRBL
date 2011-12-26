@@ -3,6 +3,14 @@ import curses.textpad, curses.ascii
 from historypad import HistoryPad
 from cmdline import CmdLine
 
+HELP='''!! some extra value from Mendez
+help        -- This listing of not so helpful things.
+key/k       -- Move the mill using the keyboard.
+exit/quit/q -- Close the program.
+error       -- display an error message
+clear       -- clear the screen.
+'''
+
 class Screen(object):
   def __init__(self, version=None, title=None):
     '''initalize a curses screen using the wrapper'''
@@ -10,6 +18,7 @@ class Screen(object):
     if not title: title='pyScreen v%3.1f'%(version)
     self.version = version
     self.title = title
+    self.help = HELP
     self.cmdheight=1
     self.padlength=10000
     self.state = 'key' # or 'cmd' or 'exit'
@@ -76,6 +85,7 @@ class Screen(object):
         break
       elif cmd == 'clear': self.history.clear()
       elif cmd == 'error': self.message('ERROR!', debug=True)
+      elif cmd == 'help': self.cmd.echo(self.help)
       elif cmd == 'key' or cmd == 'k': 
         self.state = 'key'
         self.cmd.info = self.hook_message()
