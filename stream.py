@@ -14,6 +14,7 @@ class GrblScreen(CommandScreen):
     self.history.write(message, attr=attr)
     self.state='run'
     self.cmd.info=" Running file: %s"%(self.G.argv[1])
+    self.cmd.progressbar(self.G.progress)
     self.refresh()
     # self.history.refresh()
   

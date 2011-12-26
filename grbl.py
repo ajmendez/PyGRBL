@@ -25,12 +25,9 @@ def gdebug(getargv=False):
   BASIC=False
   options,remainder = getopt.gnu_getopt(sys.argv[1:], 'dwb')
   for opt, arg in options:
-    if opt == '-d':
-      DEBUG=True
-    if opt == '-w':
-      WATCH=True
-    if opt == '-b':
-      BASIC=True
+    if opt == '-d': DEBUG=True
+    if opt == '-w': WATCH=True
+    if opt == '-b': BASIC=True
   if getargv:
     remainder.insert(0,sys.argv[0])
     return (DEBUG, WATCH, BASIC, remainder)
@@ -145,11 +142,13 @@ class Grbl:
       l = line.strip() # Strip all EOL characters for streaming
       p = i/float(len(lines))*100
       t = self.timeleft(i,len(lines))
+      self.progress, self.time = p/100.0,t
       self.run(l, echocmd=True, cmdprefix='[%2d%%][%s]Sending'%(p,t))
+      
     
     # Wait here until grbl is finished to close serial port and file.
-    self.write("%s ran for %s"%(self.title,
+    self.write("!! %s ran for %s"%(self.title,
                            self.timeleft(len(lines),len(lines),totaltime=True)))
-    self.read(">>>  Press <Enter> to finish  <<<")
+    self.read("   >>>  Press <Enter> to finish  <<<")
     
     

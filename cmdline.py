@@ -15,6 +15,7 @@ class CmdLine(object):
   def refresh(self):
     '''This updates the title depending on the mode that we are under'''
     self.window.addstr(0,1,' %s '%self.state.upper())
+    self.window.hline(1,1, ' ', self.width-2)
     self.window.addstr(1,1, self.info)
     self.window.refresh()
     # self.textwin.refresh()
@@ -42,17 +43,23 @@ class CmdLine(object):
     self.history.write(cmd, attr=attr)
     self.history.refresh()
   
-  def input(self):
-    self.textwin.hline(0,0,' ' ,self.width)
-    box = curses.textpad.Textbox(self.textwin)
-    text = box.edit(self.validator)
-    # curses.nocbreak()
-    # curses.echo()
-    # curses.noraw()
-    # text = raw_input()
-    # curses.noecho()
-    # curses.cbreak()
-    # curses.raw()
-    # self.textwin.clrtoeol()
-    # self.history.debug(text)
+  def input(self, message=None, state=None):
+    self.textwin.hline(0,0,' ' ,self.width-2)
+    if state: self.state = state
+    if message:
+      self.info = message
+      self.refresh()
+      return self.window.getch()
+    else:
+      box = curses.textpad.Textbox(self.textwin)
+      text = box.edit(self.validator)
     return text.strip()
+  
+  def progressbar(self, p):
+    attr = curses.color_pair(3)
+    length = self.width*3/4
+    current = int(p*length)
+    self.window.addstr(0,(self.width-length)/2,'[',attr)
+    self.window.addstr(0,(self.width-length)/2+length+1,']',attr)
+    self.window.hline(0,(self.width-length)/2+1,' ',length)
+    self.window.hline(0,(self.width-length)/2+1, '#',current+2,attr)
