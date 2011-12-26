@@ -22,16 +22,19 @@ def gdebug(getargv=False):
   '''g(rbl)debug function, allows me to return either the debug bool/argv.'''
   DEBUG=False
   WATCH=False
+  BASIC=False
   options,remainder = getopt.gnu_getopt(sys.argv[1:], 'dw')
   for opt, arg in options:
     if opt == '-d':
       DEBUG=True
     if opt == '-w':
       WATCH=True
+    if opt == '-b':
+      BASIC=True
   if getargv:
     remainder.insert(0,sys.argv[0])
-    return (DEBUG, WATCH, remainder)
-  return (DEBUG, WATCH)
+    return (DEBUG, WATCH, BASIC, remainder)
+  return (DEBUG, WATCH, BASIC)
 
 
 
@@ -41,7 +44,8 @@ def gdebug(getargv=False):
 class Grbl:
   HEADER=HEADER
   
-  def __init__(self, dev=None, speed=None, debug=False, watch=False, waittime=0.5):
+  def __init__(self, dev=None, speed=None, 
+               debug=False, watch=False, basic=False, waittime=0.5):
     '''Starts the Serial/FakeSerial device'''
     if not dev: dev='/dev/tty.usbmodem1d11'
     if not speed: speed=9600
@@ -49,9 +53,10 @@ class Grbl:
     self.version = VERSION
     self.title = TITLE
     self.starttime = datetime.datetime.now()
-    self.debug, self.watch, self.argv = gdebug(getargv=True)
-    if debug: self.debug=debug
-    if watch: self.watch=watch
+    self.debug, self.watch, self.basic, self.argv = gdebug(getargv=True)
+    if debug: self.debug = debug
+    if watch: self.watch = watch
+    if basic: self.basic = basic
     # self.debug = debug
     # self.watch = watch
     
@@ -109,7 +114,8 @@ class Grbl:
     while self.s.inWaiting() > 0:
       out += self.s.read(1)
     if out != '':
-      self.write('\n'.join([' |  ' + o for o in out.splitlines()]))
+      return self.write('\n'.join([' |  ' + o for o in out.splitlines()]))
+    return 'Nothing returned'
   
   def timeleft(self,i,total,totaltime=False):
     '''From the current step, and total steps, estimate the time left'''

@@ -48,6 +48,7 @@ class GrblScreen(Screen):
     # self.screen.addstr(1,1,"This is my simple motion thing")
     self.G.write = self.history.write
     self.G.read = self.cmd.input
+    self.state ='key'
     # self.G.run(self.G.HEADER)
     # self.history.refresh()
   
@@ -71,8 +72,8 @@ class GrblScreen(Screen):
     '''If Keyfunction returns true, this is run'''
     # self.screen.addstr(2,1,"Location: %s"%(self.location))
     # self.history.write("Location: %s"%(self.location))
-    self.G.run(self.location.gcode())
-    self.history.debug(self.location.gcode())
+    self.cmd.run(self.location.gcode())
+    # self.history.debug(self.location.gcode())
     self.history.refresh()
   
   def __init__(self):
@@ -84,7 +85,7 @@ class GrblScreen(Screen):
     self.move = 0.5
     self.shiftmove = 1.0
     
-    Screen.__init__(self,title=self.title, version=self.version, raw=True)
+    Screen.__init__(self,title=self.title, version=self.version)
 
-    
-s = GrblScreen()
+if __name__ == "__main__":
+  s = GrblScreen()
