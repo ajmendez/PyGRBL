@@ -2,7 +2,7 @@
 # [2011.12.25] Mendez's Optimizer
 
 import sys, getopt, os
-from toolpath import ToolPath
+from toolpath import ToolPath, distance, getclosestindex
 
 
 
@@ -28,36 +28,64 @@ GCODE_MOVE = '%s X'%(MOVE)
 GCODE_MILL = '%s X'%(MILL)
 
 class Paths(list):
-  def getclosestpath(self,x=0.0,y=0.0):
+  def totallength(self, move=False):
+    length = 0.0
+    for path in self:
+      if not move or path.method == MOVE:
+        length += path.totallength()
+    return length
+  
+  def getpath(self,x=0.0, y=0.0):
+    return self.getclosestpath(x,y,shuffle=False)
+  
+  def getclosestpath(self,x=0.0,y=0.0, shuffle=True):
     '''pops the closest path from the list'''
     location = [item.startingpoint(x,y, shuffle=True) for item in self]
-    index = ToolPath().getclosestindex(location,x,y)
-    # distances = [item.distance(x,y, x2,y2) for x2,y2 in location]
-    # mindistance = min(distances)
-    # index = distances.index(mindistance)
-    # if distances.count(mindistance) > 1: 
-    #   pass # I should error here
-    return self.pop(index)
+    index = getclosestindex(location,x,y)
+    return (location[index], self.pop(index))
   
-  @classmethod
-  def movepath(self, x1,y1, x2,y2):
-    '''Oh it is simple, just move since we have already lifted'''
-    thispath = ToolPath(x=x1,y=y1,method=GCODE_MOVE)
-    thispath.absolute(x=x2, y=y2)
-    return thispath
+  # def getrecursepath(self,x,y,z, path=None, recurse=0, maxrecurse = 4):
+  #   '''recursively search for the shortest path'''
+  #   if path is None: 
+  #     (x1,y1,z1), path = self.getclosestpath(self,x,y)
+  #   if len(self) == 0 or recurse == maxrecurse:
+  #     return (path.startingpoint(), path)
+  #   
+  #   # So we should operate on path, we are at x,y and we want to find the path which is closest
+  #   
+  #   distances = [distance(x1,y1, ) for x,y,z in path.previous]
+  #   mindistance = min(distances)
+  #   l = path.previous[distances.index(mindistance)]
+  #   lnew, path = self.getrecursepath(l[0], l[1], l[1])
+  #   self.append(path)
+  #   return blah
+    
+  def getbetterpath(self, x, y):
+    l_start, path  = self.getclosestpath(x,y)
+    l_end = path.endingpoint()
+    if len(self) == 0: return (l_start, path)
+    l_next, path2 = self.getclosestpath(l_end[0],l_end[1])
+    l_better = path.startingpoint2(x,y, l_next[0], l_next[1])
+    self.append(path2)
+    return (l_better, path) 
   
   def togcode(self, method=None):
     out = []
     out.extend(GCODE_BEGIN.splitlines())
     for item in self:
-      if item.method == GCODE_MOVE:
-        out.extend(GCODE_BETWEEN[0].splitlines())
-      elif item.method == GCODE_MILL:
-        out.extend(GCODE_BETWEEN[1].splitlines())
-      out.extend(item.pathgcode(GCODE_MILL, simple=True))
-      
+      if item.method == MOVE: out.extend(GCODE_BETWEEN[0].splitlines())
+      elif item.method == MILL: out.extend(GCODE_BETWEEN[1].splitlines())
+      else: self.error("undefined method")
+      out.extend(item.pathgcode(simple=True))
     out.extend(GCODE_END.splitlines())
     return out
+  
+  @classmethod
+  def NewMovePath(self, x1,y1, x2,y2):
+    '''Oh it is simple, just move since we have already lifted'''
+    thispath = ToolPath(x=x1,y=y1,method=MOVE)
+    thispath.absolute(x=x2, y=y2)
+    return thispath
 
 
 
@@ -82,6 +110,8 @@ class Optimize(object):
       if not attr: error = True
     if not (error == negate):
       self.error("%s not found -- %s"%(attr, message))
+  def checknotattr(self, attr, message, negate=True):
+    self.checkattr(attr, message, negate=negate)
   
   def write(self, message):
     print message
@@ -101,7 +131,7 @@ class Optimize(object):
   
   def load_file(self):
     '''Loads a file, should at some point check the inputs'''
-    self.checkattr(len(self.args) != 2, "Please load a file by %s [-d] inputfile.nc"%(self.args[0]), negate=True)
+    self.checkattr(len(self.args) == 2, "Please load a file by %s [-d] inputfile.nc"%(self.args[0]))
     with open(self.args[1], 'r') as f: self.raw = f.readlines()
   
   def parse_gcode(self, line):
@@ -118,10 +148,9 @@ class Optimize(object):
   def parse_raw(self):
     '''Parse the raw gcode for a 2d plane'''
     self.checkattr('raw',"Please load some data into self.raw before running")
-    self.checkattr('rawpaths',"Already Processed paths, please check", negate=True)
+    self.checknotattr('rawpaths',"Already Processed paths, please check")
     
     self.rawpaths = Paths()
-    
     i=0 # someone please tell me a pythonic way of doing this
     while i < len(self.raw):
       line = self.raw[i]
@@ -130,7 +159,7 @@ class Optimize(object):
       while GCODE_MILL in line:
         x,y = self.parse_gcode(line)
         if start: 
-          millpath = ToolPath(x=x, y=y, z=MILL_DEPTH, method=GCODE_MILL)
+          millpath = ToolPath(x=x, y=y, z=MILL_DEPTH, method=MILL)
           start = False
         else:
           millpath.absolute(x=x, y=y, z=MILL_DEPTH)
@@ -144,24 +173,26 @@ class Optimize(object):
     if method == 'length': self.optimize_length()
     else: self.error("Undefined optimize method")
   
-  def optimize_length(self):
+  def optimize_length(self, x=0.0, y=0.0):
     '''Find the path with the smallest travel length'''
-    x,y = 0.0, 0.0 # start at the origin
     self.orderedpaths = Paths()
     while len(self.rawpaths) > 0:
-      closestpath = self.rawpaths.getclosestpath(x,y)
-      x1,y1,z = closestpath.startingpoint(x,y, shuffle=True)
-      # x1,y1,z = closestpath.startingpoint(x,y)
-      movepath = Paths().movepath(x,y, x1,y1)
-      self.orderedpaths.append(movepath) 
+      # (x1,y1,z), closestpath = self.rawpaths.getpath(x,y)
+      # (x1,y1,z1), closestpath = self.rawpaths.getclosestpath(x,y)
+      (x1,y1,z), closestpath = self.rawpaths.getbetterpath(x,y)
+      # (x1,y1,z), closestpath = self.rawpaths.getrecursepath(x,y)
+      mpath = Paths().NewMovePath(x,y, x1,y1)
+      self.orderedpaths.append(mpath) 
       self.orderedpaths.append(closestpath)
-      x2,y2,z = closestpath.endingpoint()
-      x,y = x2,y2
+      x2,y2,z2 = closestpath.endingpoint()
+      x,y,z = x2,y2,z2
   
   def write_optimized(self):
     self.checkattr('orderedpaths', "Ordered Path Needed")
     outfile = '_opt'.join(os.path.splitext(self.args[1]))
     self.write("Writing to file: %s"%outfile)
+    self.write("Total | Move Path Length: %4.2f | %4.2f "%(self.orderedpaths.totallength(),
+                                                           self.orderedpaths.totallength(move=True)))
     gcode = self.orderedpaths.togcode()
     with open(outfile,'w') as f:
       for item in gcode: f.write(item+'\n')

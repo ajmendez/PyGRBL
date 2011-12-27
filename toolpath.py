@@ -2,6 +2,28 @@ from math import sqrt
 from numpy import median
 from itertools import cycle
 
+
+def distance(x1,y1, x2,y2):
+  return sqrt(pow(x2-x1,2)+pow(y2-y1,2))
+
+def distance3(l1, l2):
+  return sqrt( pow(l1[0]-l2[0],2) + pow(l1[1]-l2[1],2) + pow(l1[1]-l2[1],2) )
+
+
+def getclosestindex(location,x,y):
+  distances = [distance(x,y, x2,y2) for x2,y2,z in location]
+  mindistance = min(distances)
+  return distances.index(mindistance)
+
+def getclosestindex2(location, x1,y1, x2,y2):
+  distances = [distance(x,y, x1,y1)+distance(x,y, x2,y2) for x,y,z in location]
+  mindistance = min(distances)
+  return distances.index(mindistance)
+
+
+
+
+
 class ToolPath(object):
   def __init__(self, x=0.0, y=0.0, z=0.0, method=None, maxpoints=10000):
     self.maxpoints = maxpoints
@@ -28,23 +50,25 @@ class ToolPath(object):
   def __len__(self):
     return len(self.previous)
   
+  def totallength(self):
+    length = 0.0
+    last = (0.0, 0.0, 0.0)
+    for item in self.previous:
+      length += distance3(last, item)
+      last = item
+    return length
+  
+  
+  
   
   def getdelta(self,array):
     x=array[:] # uhh?!
     delta=[]
     while len(x) > 1:
       item = x.pop()
-      delta.append(self.distance(item[0],item[1], x[0][0],x[0][1]))
+      delta.append(distance(item[0],item[1], x[0][0],x[0][1]))
     return delta
-  
-  @classmethod
-  def getclosestindex(self,location,x,y):
-    distances = [self.distance(x,y, x2,y2) for x2,y2,z in location]
-    mindistance = min(distances)
-    index = distances.index(mindistance)
-    if distances.count(mindistance) > 1: 
-      print "check number of distance == mindistances"
-    return index
+
     
   def startingpoint(self,x,y, shuffle=False):
     '''I might be able to shuffle the array to get closer points, but lazy for now
@@ -54,18 +78,22 @@ class ToolPath(object):
       move = self.getdelta([self.previous[0], self.previous[-1]])
       distances = self.getdelta(self.previous)
       if move < median(distances):
-        index = self.getclosestindex(self.previous,x,y)
+        index = getclosestindex(self.previous,x,y)
         if index > 0:
           b = self.previous[index:]
           b.extend(self.previous[:index])
           self.previous = b
-          print index
-          print len(b), len(self.previous)
-        # while index < len(self.previous):
-        #   self.previous.insert(0, self.previous.pop())
     return self.previous[0]
   def endingpoint(self):
     return self.previous[-1]
+  
+  def startingpoint2(self, x1,y1, x2,y2):
+    index = getclosestindex2(self.previous, x1,y1, x2,y2)
+    if index > 0:
+      b = self.previous[index:]
+      b.extend(self.previous[:index])
+      self.previous = b
+    return self.previous[0]
   
   def center(self):
     '''returns the center of the path'''
@@ -85,20 +113,17 @@ class ToolPath(object):
   
   def gcode(self):
     return self.togcode(x=self.x,y=self.y, z=self.z, method=self.method)
-
-  @classmethod
-  def distance(self, x1,y1, x2,y2):
-    return sqrt(pow(x2-x1,2)+pow(y2-y1,2))
   
   
-  def togcode(self, x=None, y=None, z=None, method='G01', simple=False):
+  def togcode(self, x=None, y=None, z=None, method=None, simple=False):
+    if not method: method=self.method
     if simple:
       return "%s X%6.4f Y%6.4f"%(method, x, y)
     else:
       return "%s X%6.4f Y%6.4f Z%6.4f"%(method, x, y, z)
   
-  def pathgcode(self,method=None,simple=True):
-    def simpleg(item):return self.togcode(item[0],item[1], method=method, simple=simple)
+  def pathgcode(self,simple=True):
+    def simpleg(item):return self.togcode(item[0],item[1], simple=simple)
     return map(simpleg, self.previous)
     
   
