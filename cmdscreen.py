@@ -21,6 +21,7 @@ class CmdScreen(Screen):
   def hook_key(self, key, mod):
     '''Returns true if got a key else false.'''
     if mod == 27: move = self.location.shiftmove
+    if mod == -1 and (key == ord('A') or key == ord('Z')): move = self.location.shiftmove
     else: move = self.location.move
     if   key == curses.KEY_UP    or (mod==27 and key== 67): self.location.relative(x= move)
     elif key == curses.KEY_DOWN  or (mod==27 and key== 68): self.location.relative(x=-move)
