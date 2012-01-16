@@ -42,7 +42,7 @@ class Grbl:
   HEADER=HEADER
   
   def __init__(self, dev=None, speed=None, 
-               debug=False, watch=False, basic=False, waittime=0.5):
+               debug=False, watch=False, basic=False, waittime=0.4):
     '''Starts the Serial/FakeSerial device'''
     if not dev: dev='/dev/tty.usbmodem1d11'
     if not speed: speed=9600
