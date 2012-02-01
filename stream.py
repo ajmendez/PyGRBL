@@ -30,8 +30,8 @@ class GrblScreen(CmdScreen):
 if __name__ == "__main__":
   G = Grbl()
   if G.basic:
-    g.write("%s is opening %s"%(g.argv[0],g.argv[1]))
-    g.run('$') # Print out the current settings
-    g.runfile(g.argv[1])
+    G.write("%s is opening %s"%(G.argv[0],G.argv[1]))
+    G.run('$') # Print out the current settings
+    G.runfile(G.argv[1])
   else:
     s = GrblScreen(G)

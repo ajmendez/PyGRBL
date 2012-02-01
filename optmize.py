@@ -18,11 +18,9 @@ M03
 M04 P1.0 (PAUSE TO CHECK IF OK)
 '''
 GCODE_BETWEEN=['%s Z%6.4f'%(MOVE,MOVE_DEPTH),'%s Z%6.4f'%(MILL, MILL_DEPTH)]
-GCODE_END='''G00 Z0.5000 
-G00 X0.00 Y0.00 
-G00 X0.00 Y0.00 Z0.00
-M05
-M02'''
+GCODE_END='''G01 Z0.5000 
+G00 X0.00 Y0.00 Z0.05
+'''
 GCODE_MOVE = '%s X'%(MOVE)
 GCODE_MILL = '%s X'%(MILL)
 
@@ -176,10 +174,13 @@ class Optimize(object):
     '''Find the path with the smallest travel length'''
     self.orderedpaths = Paths()
     while len(self.rawpaths) > 0:
-      (x1,y1,z), closestpath = self.rawpaths.getpath(x,y)
+      # (x1,y1,z), closestpath = self.rawpaths.getpath(x,y)
       # (x1,y1,z1), closestpath = self.rawpaths.getclosestpath(x,y)
-      # (x1,y1,z), closestpath = self.rawpaths.getbetterpath(x,y)
+      (x1,y1,z), closestpath = self.rawpaths.getbetterpath(x,y)
       # (x1,y1,z), closestpath = self.rawpaths.getrecursepath(x,y)
+      
+      closestpath.absolute(x1,y1,z)
+      
       mpath = Paths().NewMovePath(x,y, x1,y1)
       self.orderedpaths.append(mpath) 
       self.orderedpaths.append(closestpath)

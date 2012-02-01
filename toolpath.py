@@ -30,7 +30,7 @@ class ToolPath(object):
     if not method: method = 'G01'
     self.x, self.y, self.z, self.method = x, y, z, method
     self.shiftmove = 0.1
-    self.move = 0.01
+    self.move = 0.005
     self.previous = []
     self.save()
   

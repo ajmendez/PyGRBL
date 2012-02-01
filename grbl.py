@@ -42,9 +42,9 @@ class Grbl:
   HEADER=HEADER
   
   def __init__(self, dev=None, speed=None, 
-               debug=False, watch=False, basic=False, waittime=0.4):
+               debug=False, watch=False, basic=False, waittime=1):
     '''Starts the Serial/FakeSerial device'''
-    if not dev: dev='/dev/tty.usbmodem1d11'
+    if not dev: dev='/dev/tty.usbmodem3d11'
     if not speed: speed=9600
     self.waittime = waittime
     self.version = VERSION
@@ -150,5 +150,6 @@ class Grbl:
     self.write("!! %s ran for %s"%(self.title,
                            self.timeleft(len(lines),len(lines),totaltime=True)))
     self.read("   >>>  Press <Enter> to finish  <<<")
+    self.quit()
     
     
