@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# cmdline.py
+# [SUPPORT] -- Provide basic command line functions in a curses object.
+# [2012.01.31] Mendez
+
 import curses, datetime
 
 class CmdLine(object):

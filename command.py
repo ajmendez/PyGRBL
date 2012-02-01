@@ -1,7 +1,11 @@
 #!/usr/bin/env python
-"""\
-Simple g-code debuging tool
-"""
+# command.py
+# Either runs a basic command screen or a full curses screen.
+#    python command.py -b         Basic gcode entry method
+#    python command.py -d         DEBUG with fake serial
+#    python command.py -w         Enable Watch
+# [2012.01.31] Mendez
+
 from grbl import Grbl
 from cmdscreen import CmdScreen
 

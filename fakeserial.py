@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# fakeserial.py
+# [SUPPORT] -- provides a fake serial class for debug
+# [2012.01.31] Mendez
+
 class Serial():
     '''I need a a debug serial object.'''
     def __init__(self):

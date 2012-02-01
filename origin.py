@@ -1,7 +1,9 @@
 #!/usr/bin/env python
-"""\
-Simple g-code find the origin script
-"""
+# origin.py
+# A quick origin finding script
+#  python origin.py [-d][-w]
+# [2012.01.31] Mendez
+
 from cmdscreen import CmdScreen
 
 class GrblScreen(CmdScreen):

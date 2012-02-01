@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-####################
-## Mendez
-## [2011.12.11]
-####################
+# grbl.py
+# [SUPPORT] -- Base grbl communications and the sort.
+# [2011.12.11] -- Built
+
 import serial, time, readline, sys, getopt, socket, datetime
 import fakeserial
 

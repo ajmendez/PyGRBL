@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# toolpath.py
+# [SUPPORT] -- ToolPath object for code.
+# TODO: Switch ToolPath to a list object.
+# [2012.01.31] Mendez
+
 from math import sqrt
 from numpy import median
 from itertools import cycle

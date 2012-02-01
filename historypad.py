@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# historypad.py
+# [SUPPORT] -- Provide basic historypad curses window.
+# [2012.01.31] Mendez
+
 import curses
 
 class HistoryPad(object):

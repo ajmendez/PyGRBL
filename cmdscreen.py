@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-"""\
-Simple Command window with keyboard hooks
-"""
+# cmdscreen.py
+# [SUPPORT] -- Provide a basic curses command screen.
+# [2012.01.31] Mendez
+
 import curses
 from grbl import Grbl
 from screen import Screen

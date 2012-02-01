@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# optimize.py
+# reads and optimizes an gcode file.
+#  python optimize.py file.nc        # optimized: file_opt.nc
 # [2011.12.25] Mendez's Optimizer
 
 import sys, getopt, os

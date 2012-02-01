@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# screen.py
+# [SUPPORT] -- Provide some basic objects for a curses screen.
+# [2012.01.31] Mendez
+
 import curses, sys, time, readline, re 
 import curses.textpad, curses.ascii
 from historypad import HistoryPad

@@ -1,8 +1,13 @@
 #!/usr/bin/env python
-# flatten script
+# flatten.py
+# Output a simple gcode flatten script
+# [2012.01.31] Mendez
 
+# Full motion
 # xmax=4.33 # inches
 # ymax=2.36 # sinches
+
+# What we are going with.
 xmax=3.74 # inches -- 95
 ymax=5.4 # inches  -- 140mm
 

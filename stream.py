@@ -1,7 +1,12 @@
 #!/usr/bin/env python
-"""\
-Simple g-code streaming script for grbl
-"""
+# stream.py
+# Stream a gcode file
+#  python stream.py -b file.nc          Basic stream
+#  python stream.py file.nc             Curses window stream
+#  python stream.py -d file.nc          Enable DEBUG fakeserial
+#  python stream.py -w file.nc          Enable watch server
+# [2012.01.31] Mendez
+
 import curses
 from cmdscreen import CmdScreen
 from grbl import Grbl
