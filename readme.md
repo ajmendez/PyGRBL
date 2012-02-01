@@ -7,9 +7,11 @@ Purpose: Controls the GRBLshield using python for general motion and streaming.
 Commands:
 ---------
 Most of these commands should support:
-    # -d -- Enable debug serial class
-    # -w -- Enable gcodedrawer watch app
-    # -b -- [limited] Basic terminal functionality 
+
+
+    * -d -- Enable debug serial class
+    * -w -- Enable gcodedrawer watch app
+    * -b -- [limited] Basic terminal functionality 
 
 
     * command.py  -- Send basic commands to grbl, also move functionality.
@@ -18,6 +20,11 @@ Most of these commands should support:
     * optimize.py -- Optimization routine.
     
     * flatten.py  -- Generate raster gcode script.
+
+
+Extra:
+------
+    * Mendez_modifier.terminal -- OSX terminal support.
 
 ToDo:
 -----
