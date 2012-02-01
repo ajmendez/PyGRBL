@@ -21,7 +21,9 @@ Most of these commands should support:
     
     * flatten.py  -- Generate raster gcode script.
 
+    * bufferstream.py -- an attempt to add an additional buffer layer.
 
+ 
 Extra:
 ------
     * Mendez_modifier.terminal -- OSX terminal support.
