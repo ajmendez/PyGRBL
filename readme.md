@@ -23,7 +23,24 @@ Most of these commands should support:
 
     * bufferstream.py -- an attempt to add an additional buffer layer.
 
- 
+
+grbl settings:
+--------------
+    |  $0 = 188.976 (steps/mm x)
+    |  $1 = 188.976 (steps/mm y)
+    |  $2 = 188.976 (steps/mm z)
+    |  $3 = 50 (microseconds step pulse)
+    |  $4 = 100.000 (mm/min default feed rate)
+    |  $5 = 300.000 (mm/min default seek rate)
+    |  $6 = 0.200 (mm/arc segment)
+    |  $7 = 160 (step port invert mask. binary = 10100000)
+    |  $8 = 15.000 (acceleration in mm/sec^2)
+    |  $9 = 0.050 (cornering junction deviation in mm)
+    |  '$x=value' to set parameter or just '$' to dump current settings
+    |  ok
+
+
+
 Extra:
 ------
     * Mendez_modifier.terminal -- OSX terminal support.

@@ -2,7 +2,7 @@
 # bufferstream.py
 #  Buffers the stream to ensure not code stream starvation.
 # [2012.01.10] - SJK
-import serial, re, time, sys
+import serial, re, time, sys, argparse
 
 RX_BUFFER_SIZE = 128
 
