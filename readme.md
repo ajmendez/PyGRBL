@@ -55,3 +55,16 @@ History:
     * [2011/12] -- Built by Mendez with much drinking and eggnog
     * [2012/01] -- Pushed without documentation to bitbucket.
     
+Repository management:
+---------------------
+
+before you start editing you do a
+git pull #this syncs the repository to online sources
+git status # to ensure no failures and completion of sync
+
+to push and edited file
+git add . #this adds all files in current dir to current working changes
+git status #this tells you what has been modified and what will be committed
+git commit -m "<a message about the nature of the update>" #this commits the file with some notes
+git push #this pushes the repository to bit bucket 
+
