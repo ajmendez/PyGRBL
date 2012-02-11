@@ -10,8 +10,8 @@ from toolpath import ToolPath, distance, getclosestindex
 
 
 WARN = ['\033[91m', '\033[0m']
-MOVE_DEPTH =  0.02
-MILL_DEPTH = -0.01
+MOVE_DEPTH =  0.020
+MILL_DEPTH = -0.005
 MOVE = 'G00'
 MILL = 'G01'
 GCODE_BEGIN = '''G20
@@ -21,8 +21,9 @@ M03
 M04 P1.0 (PAUSE TO CHECK IF OK)
 '''
 GCODE_BETWEEN=['%s Z%6.4f'%(MOVE,MOVE_DEPTH),'%s Z%6.4f'%(MILL, MILL_DEPTH)]
-GCODE_END='''G01 Z0.5000 
-G00 X0.00 Y0.00 Z0.05
+GCODE_END='''G01 Z0.500
+G00 X0.00 Y0.00 Z0.500
+G00 X0.00 Y0.00 Z0.000
 '''
 GCODE_MOVE = '%s X'%(MOVE)
 GCODE_MILL = '%s X'%(MILL)
