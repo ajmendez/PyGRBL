@@ -45,7 +45,10 @@ class Grbl:
                debug=False, watch=False, basic=False, waittime=0.5):
     '''Starts the Serial/FakeSerial device'''
     # if not dev: dev='/dev/ttyACM0'
-    if not dev: dev='/dev/tty.usbmodem1d11'
+    if not dev: 
+      devs = ['/dev/tty.usbmodem1d11','/dev/ttyACM0']
+      for d in devs:
+        if os.path.exists(d): dev=d
     if not speed: speed=9600
     self.waittime = waittime
     self.version = VERSION
