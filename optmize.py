@@ -10,8 +10,9 @@ from toolpath import ToolPath, distance, getclosestindex
 
 
 WARN = ['\033[91m', '\033[0m']
-MOVE_DEPTH =  0.020
-MILL_DEPTH = -0.005
+MOVE_DEPTH  =  0.020
+MILL_DEPTH  = -0.007
+DRILL_DEPTH = -0.063
 MOVE = 'G00'
 MILL = 'G01'
 GCODE_BEGIN = '''G20
@@ -20,8 +21,10 @@ G00 X0.00 Y0.00 Z0.00
 M03
 M04 P1.0 (PAUSE TO CHECK IF OK)
 '''
-GCODE_BETWEEN=['%s Z%6.4f'%(MOVE,MOVE_DEPTH),'%s Z%6.4f'%(MILL, MILL_DEPTH)]
-GCODE_END='''G01 Z0.500
+GCODE_BETWEEN=['%s Z%6.4f'%(MOVE,MOVE_DEPTH),
+               '%s Z%6.4f'%(MILL, MILL_DEPTH),
+               '%s Z%6.4f'%(MILL, DRILL_DEPTH)]
+GCODE_END='''G00 Z0.500
 G00 X0.00 Y0.00 Z0.500
 G00 X0.00 Y0.00 Z0.000
 '''
@@ -41,7 +44,7 @@ class Paths(list):
   
   def getclosestpath(self,x=0.0,y=0.0, shuffle=True):
     '''pops the closest path from the list'''
-    location = [item.startingpoint(x,y, shuffle=True) for item in self]
+    location = [item.startingpoint(x,y, shuffle=shuffle) for item in self]
     index = getclosestindex(location,x,y)
     return (location[index], self.pop(index))
   
@@ -70,13 +73,14 @@ class Paths(list):
     self.append(path2)
     return (l_better, path) 
   
-  def togcode(self, method=None):
+  def togcode(self):
     out = []
     out.extend(GCODE_BEGIN.splitlines())
     for item in self:
-      if item.method == MOVE: out.extend(GCODE_BETWEEN[0].splitlines())
-      elif item.method == MILL: out.extend(GCODE_BETWEEN[1].splitlines())
+      if item.method == MOVE: i=0
+      elif item.method == MILL: i=1
       else: self.error("undefined method")
+      out.extend(GCODE_BETWEEN[i].splitlines())
       out.extend(item.pathgcode(simple=True))
     out.extend(GCODE_END.splitlines())
     return out
@@ -100,7 +104,7 @@ class Optimize(object):
   def main(self):
     self.load_file()
     self.parse_raw()
-    self.optimize_rawpath('length')
+    self.optimize_rawpath()
     self.write_optimized()
   
   def checkattr(self, attr, message, negate=False, error=False):
@@ -137,14 +141,14 @@ class Optimize(object):
   
   def parse_gcode(self, line):
     '''Lets start with just some x,y locations, add z later'''
-    x, y = -1, -1
+    g, x, y, z = -1, -1, -1, -1
     tmp = line.split()
     for t in tmp:
       if   'X' in t: x = float(t.strip('X'))
       elif 'Y' in t: y = float(t.strip('Y'))
-      # elif 'Z' in t: z = float(t.strip('Z'))
-      # elif 'G' in t: g = float(t.strip('G'))
-    return (x,y)
+      elif 'Z' in t: z = float(t.strip('Z'))
+      elif 'G' in t: g = float(t.strip('G'))
+    return (g,x,y,z)
   
   def parse_raw(self):
     '''Parse the raw gcode for a 2d plane'''
@@ -158,7 +162,7 @@ class Optimize(object):
       start = True
       # For each of the mill paths
       while GCODE_MILL in line:
-        x,y = self.parse_gcode(line)
+        g,x,y,z = self.parse_gcode(line)
         if start: 
           millpath = ToolPath(x=x, y=y, z=MILL_DEPTH, method=MILL)
           start = False
@@ -170,24 +174,23 @@ class Optimize(object):
         self.rawpaths.append(millpath)
       i += 1
       
-  def optimize_rawpath(self, method='length'):
-    if method == 'length': self.optimize_length()
-    else: self.error("Undefined optimize method")
   
-  def optimize_length(self, x=0.0, y=0.0):
+  def optimize_rawpath(self, x=0.0, y=0.0, z=0.0, method='better',path=Paths):
     '''Find the path with the smallest travel length'''
-    self.orderedpaths = Paths()
+    self.orderedpaths = path()
+    
     while len(self.rawpaths) > 0:
-      # (x1,y1,z), closestpath = self.rawpaths.getpath(x,y)
-      # (x1,y1,z1), closestpath = self.rawpaths.getclosestpath(x,y)
-      (x1,y1,z), closestpath = self.rawpaths.getbetterpath(x,y)
-      # (x1,y1,z), closestpath = self.rawpaths.getrecursepath(x,y)
+      if method ==  'closest': (x1,y1,z1), closestpath = self.rawpaths.getclosestpath(x,y)
+      elif method == 'better': (x1,y1,z1), closestpath = self.rawpaths.getbetterpath(x,y)
+      # elif method == 'recurse': (x1,y1,z), closestpath = self.rawpaths.getrecursepath(x,y)
+      else: (x1,y1,z1), closestpath = self.rawpaths.getpath(x,y)
       
-      closestpath.absolute(x1,y1,z)
-      
-      mpath = Paths().NewMovePath(x,y, x1,y1)
+      if not hasattr(self.orderedpaths,'drill'):
+        closestpath.absolute(x1,y1,z1)
+      mpath = path().NewMovePath(x,y, x1,y1)
       self.orderedpaths.append(mpath) 
-      self.orderedpaths.append(closestpath)
+      if not hasattr(self.orderedpaths,'drill'):
+        self.orderedpaths.append(closestpath)
       x2,y2,z2 = closestpath.endingpoint()
       x,y,z = x2,y2,z2
   
