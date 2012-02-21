@@ -3,7 +3,7 @@
 # [SUPPORT] -- Base grbl communications and the sort.
 # [2011.12.11] -- Built
 
-import serial, time, readline, sys, getopt, socket, datetime
+import os, serial, time, readline, sys, getopt, socket, datetime
 import fakeserial
 
 VERSION = 0.1
