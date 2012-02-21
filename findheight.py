@@ -15,9 +15,9 @@ G90'''
 
 xbound = [ 0.000,  0.750] # inch
 ybound = [-0.010, -0.010]
-zbound = [ 0.010, -0.010] #inch
+zbound = [ 0.000, -0.010] #inch
 ntick = 4
-ticklen = 0.100 #inch
+ticklen = 0.050 #inch
 def findloc(p, bound):
   return bound[0] + p*(bound[1] - bound[0])
 

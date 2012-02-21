@@ -7,7 +7,7 @@
 from math import sqrt
 from numpy import median
 from itertools import cycle
-
+import copy
 
 def distance(x1,y1, x2,y2):
   return sqrt(pow(x2-x1,2)+pow(y2-y1,2))
@@ -139,3 +139,73 @@ class ToolPath(object):
       self.pop(0)
     if len(self.previous) == 0 or self.previous[-1] != v:
       self.previous.append(v)
+
+
+
+class Toolpath2(list):
+  def __init__(self, g=0, x=0.0, y=0.0, z=0.0, method=None):
+    super(Toolpath2,self).__init__(self)
+    if not method: method = 'G00'
+    self.method=method
+    self.append([g,x,y,z])
+  
+  def absolute(self, g=None, x=None, y=None, z=None):
+    last = copy.deepcopy(self[-1])
+    for i,item in enumerate([g,x,y,z]):
+      if item != None: last[i] = item
+    self.append(last)
+  
+  def relative(self, g=None, x=None, y=None, z=None):
+    last = copy.deepcopy(self[-1])
+    for i,item in enumerate([g,x,y,z]):
+      if item != None: last[i] += item
+    self.append(last)
+  
+  
+  def getdelta(self,x):
+    delta=[]
+    while len(x) > 1:
+      item = x.pop()
+      delta.append(distance(item[0],item[1], x[0][0],x[0][1]))
+    return delta
+  def getclosestindex(self,x,y):
+    distances = [distance(x,y, x1,y1) for g,x1,y1,z in self]
+    mindistance = min(distances)
+    return distances.index(mindistance)
+    
+  def startingpoint(self,x,y, shuffle=False):
+    '''I might be able to shuffle the array to get closer points, but lazy for now
+    This is also safer since I am not sure if there are lines rather than connected paths'''
+    if shuffle:
+      # there has to be a better way
+      move = self.getdelta([self[0], self[-1]])
+      distances = self.getdelta(self)
+      if move < median(distances):
+        index = self.getclosestindex(x,y)
+        if index > 0:
+          b = self[index:]
+          b.extend(self[:index])
+          self = b
+    return self[0][1:]
+  def endingpoint(self):
+    return self[-1][1:]
+  #
+  def totallength(self):
+    length = 0.0
+    last = (0.0, 0.0, 0.0)
+    for item in self:
+      length += distance3(last, item)
+      last = item
+    return length
+  #
+  def togcode(self, x=None, y=None, z=None, method=None, simple=False):
+    if not method: method=self.method
+    if simple:
+      return "%s X%6.4f Y%6.4f"%(method, x, y)
+    else:
+      return "%s X%6.4f Y%6.4f Z%6.4f"%(method, x, y, z)
+  
+  def pathgcode(self,simple=True):
+    def simpleg(item):return self.togcode(item[0],item[1], simple=simple)
+    return map(simpleg, self)
+  
