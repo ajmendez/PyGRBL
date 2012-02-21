@@ -9,6 +9,9 @@ from numpy import median
 from itertools import cycle
 import copy
 
+import numpy 
+numpy.seterr('raise')
+
 def distance(x1,y1, x2,y2):
   return sqrt(pow(x2-x1,2)+pow(y2-y1,2))
 
@@ -83,6 +86,8 @@ class ToolPath(object):
       # there has to be a better way
       move = self.getdelta([self.previous[0], self.previous[-1]])
       distances = self.getdelta(self.previous)
+      if len(distances) == 0:
+        return self.previous[0]
       if move < median(distances):
         index = getclosestindex(self.previous,x,y)
         if index > 0:

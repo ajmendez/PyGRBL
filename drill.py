@@ -7,12 +7,17 @@
 import sys, getopt, os
 from toolpath import distance
 from toolpath import Toolpath2 as ToolPath
-from optmize import Optimize, Paths,  MILL,MOVE, GCODE_MILL,GCODE_BEGIN,GCODE_BETWEEN, GCODE_END
+from optimize import Optimize, Paths,  MILL,MOVE, GCODE_MILL,GCODE_BEGIN,GCODE_BETWEEN, GCODE_END
 
 
+# Modified path class which prints out slightly different heights and drill code sizes.
 class DrillPaths(Paths):
+  # One of my hacks blows up when dealing with the drill file, so
+  #  I check for this boolean in optimize.py
   drill=True
+  
   def togcode(self):
+    '''Modified togcode function that pushes out better gcode.'''
     out = []
     out.extend(GCODE_BEGIN.splitlines())
     for item in self:
@@ -26,6 +31,7 @@ class DrillPaths(Paths):
 
 class Drill(Optimize):
   def main(self):
+    '''Run the optimization procedure'''
     self.load_file()
     self.parse_drills()
     self.get_drillpath()

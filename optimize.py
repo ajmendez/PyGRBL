@@ -11,7 +11,7 @@ from toolpath import ToolPath, distance, getclosestindex
 
 WARN = ['\033[91m', '\033[0m']
 MOVE_DEPTH  =  0.020
-MILL_DEPTH  = -0.007
+MILL_DEPTH  = -0.004
 DRILL_DEPTH = -0.063
 MOVE = 'G00'
 MILL = 'G01'
@@ -32,10 +32,10 @@ GCODE_MOVE = '%s X'%(MOVE)
 GCODE_MILL = '%s X'%(MILL)
 
 class Paths(list):
-  def totallength(self, move=False):
+  def totallength(self):
     length = 0.0
     for path in self:
-      if not move or path.method == MOVE:
+      if path.method == MOVE:
         length += path.totallength()
     return length
   
@@ -139,17 +139,27 @@ class Optimize(object):
     self.checkattr(len(self.args) == 2, "Please load a file by %s [-d] inputfile.nc"%(self.args[0]))
     with open(self.args[1], 'r') as f: self.raw = f.readlines()
   
+  # def parse_gcode(self, line):
+  #   '''Lets start with just some x,y locations, add z later'''
+  #   g, x, y, z = -1, -1, -1, -1
+  #   tmp = line.split()
+  #   for t in tmp:
+  #     if   'X' in t: x = float(t.strip('X'))
+  #     elif 'Y' in t: y = float(t.strip('Y'))
+  #     elif 'Z' in t: z = float(t.strip('Z'))
+  #     elif 'G' in t: g = float(t.strip('G'))
+  #   return (g,x,y,z)
   def parse_gcode(self, line):
-    '''Lets start with just some x,y locations, add z later'''
-    g, x, y, z = -1, -1, -1, -1
+    '''Parse each line a bit better. parses G,x,y,z as floats'''
     tmp = line.split()
+    out = {}
+    for item in ['G','X','Y','Z']: out[item] = None
     for t in tmp:
-      if   'X' in t: x = float(t.strip('X'))
-      elif 'Y' in t: y = float(t.strip('Y'))
-      elif 'Z' in t: z = float(t.strip('Z'))
-      elif 'G' in t: g = float(t.strip('G'))
-    return (g,x,y,z)
-  
+      for item in out:
+        if item in t: 
+          out[item] = float(t.strip(item))
+    return out
+    
   def parse_raw(self):
     '''Parse the raw gcode for a 2d plane'''
     self.checkattr('raw',"Please load some data into self.raw before running")
@@ -162,20 +172,28 @@ class Optimize(object):
       start = True
       # For each of the mill paths
       while GCODE_MILL in line:
-        g,x,y,z = self.parse_gcode(line)
+        out = self.parse_gcode(line)
+        # if this is a new mill, then start a milling path, else start a move.
         if start: 
-          millpath = ToolPath(x=x, y=y, z=MILL_DEPTH, method=MILL)
+          millpath = ToolPath(x=out['X'], 
+                              y=out['Y'], 
+                              z=MILL_DEPTH, 
+                              method=MILL)
           start = False
         else:
-          millpath.absolute(x=x, y=y, z=MILL_DEPTH)
+          millpath = ToolPath(x=out['X'], 
+                              y=out['Y'], 
+                              z=MILL_DEPTH, 
+                              method=MOVE)
         i += 1
         line = self.raw[i]
       if start is False:
         self.rawpaths.append(millpath)
       i += 1
+    self.rawpathlength = self.rawpaths.totallength()
       
   
-  def optimize_rawpath(self, x=0.0, y=0.0, z=0.0, method='better',path=Paths):
+  def optimize_rawpath(self, x=0.0, y=0.0, z=0.0, method='xxx',path=Paths):
     '''Find the path with the smallest travel length'''
     self.orderedpaths = path()
     
@@ -193,13 +211,14 @@ class Optimize(object):
         self.orderedpaths.append(closestpath)
       x2,y2,z2 = closestpath.endingpoint()
       x,y,z = x2,y2,z2
+    self.orderedpathlength = self.orderedpaths.totallength()
   
   def write_optimized(self):
     self.checkattr('orderedpaths', "Ordered Path Needed")
     outfile = '_opt'.join(os.path.splitext(self.args[1]))
     self.write("Writing to file: %s"%outfile)
-    self.write("Total | Move Path Length: %4.2f | %4.2f "%(self.orderedpaths.totallength(),
-                                                           self.orderedpaths.totallength(move=True)))
+    self.write("WRONG LENGTHS: Raw Pathlength | Full Path Length: %4.2f | %4.2f "%(self.rawpathlength,
+                                                           self.orderedpathlength))
     gcode = self.orderedpaths.togcode()
     with open(outfile,'w') as f:
       for item in gcode: f.write(item+'\n')
