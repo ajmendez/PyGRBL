@@ -3,6 +3,7 @@
 #  Buffers the stream to ensure not code stream starvation.
 # [2012.01.10] - SJK
 import serial, re, time, sys, argparse
+from glob import glob
 
 RX_BUFFER_SIZE = 128
 
@@ -10,11 +11,27 @@ RX_BUFFER_SIZE = 128
 parser = argparse.ArgumentParser(description='Stream g-code file to grbl. (pySerial and argparse libraries required)')
 parser.add_argument('gcode_file', type=argparse.FileType('r'),
         help='g-code filename to be streamed')
-parser.add_argument('device_file',
+parser.add_argument('device_file', default=None, nargs='?',
         help='serial device path')
 parser.add_argument('-q','--quiet',action='store_true', default=False, 
         help='suppress output text')
 args = parser.parse_args()
+
+# Lets automatically search for a arduino for osx / linux.
+if not args.device_file:
+  # Where they generally are: 
+  devs = ['/dev/tty.usb*','/dev/ttyACM*']
+  founddevs = []
+  for d in devs:
+    dev = glob(d)
+    if len(dev) > 0 : founddevs.extend(devs)
+  # ok we found something or we should fail
+  if len(founddevs) == 1:
+    args.device_file = founddevs[0]
+  else:
+    parser.print_help()
+    print '\n !!! Could not find a single or any device to use, please specify one.'
+    sys.exit(1)
 
 # Periodic timer to query for status reports
 # TODO: Need to track down why this doesn't restart consistently before a release.
@@ -39,6 +56,7 @@ s.flushInput()
 
 # Stream g-code to grbl
 print "Streaming ", args.gcode_file.name, " to ", args.device_file
+
 l_count = 0
 g_count = 0
 c_line = []
