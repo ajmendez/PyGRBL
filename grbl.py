@@ -46,10 +46,11 @@ class Grbl:
     '''Starts the Serial/FakeSerial device'''
     # if not dev: dev='/dev/ttyACM0'
     if not dev: 
-      devs = ['/dev/tty.usbmodem1d11','/dev/ttyACM0']
+      devs = ['/dev/tty.PL2303-0000101D','/dev/tty.PL2303-0000103D','/dev/tty.usbmodem1d11','/dev/ttyACM0']
       for d in devs:
         if os.path.exists(d): dev=d
     if not speed: speed=9600
+    print "%s :: %i"%(dev,speed)
     self.waittime = waittime
     self.version = VERSION
     self.title = TITLE

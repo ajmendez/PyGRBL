@@ -13,7 +13,7 @@ print '''(findheight.py)'
 G20
 G90'''
 
-xbound = [ 0.000,  0.750] # inch
+xbound = [ 0.000,  -0.750] # inch
 ybound = [-0.010, -0.010]
 zbound = [ 0.000, -0.010] #inch
 ntick = 4

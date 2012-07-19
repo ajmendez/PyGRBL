@@ -196,12 +196,15 @@ class Optimize(object):
   def optimize_rawpath(self, x=0.0, y=0.0, z=0.0, method='xxx',path=Paths):
     '''Find the path with the smallest travel length'''
     self.orderedpaths = path()
-    
+    method='better'
     while len(self.rawpaths) > 0:
       if method ==  'closest': (x1,y1,z1), closestpath = self.rawpaths.getclosestpath(x,y)
       elif method == 'better': (x1,y1,z1), closestpath = self.rawpaths.getbetterpath(x,y)
       # elif method == 'recurse': (x1,y1,z), closestpath = self.rawpaths.getrecursepath(x,y)
       else: (x1,y1,z1), closestpath = self.rawpaths.getpath(x,y)
+      
+      if hasattr(self.orderedpaths,'drill'):
+        print 'Drill!!'
       
       if not hasattr(self.orderedpaths,'drill'):
         closestpath.absolute(x1,y1,z1)
@@ -217,8 +220,8 @@ class Optimize(object):
     self.checkattr('orderedpaths', "Ordered Path Needed")
     outfile = '_opt'.join(os.path.splitext(self.args[1]))
     self.write("Writing to file: %s"%outfile)
-    self.write("WRONG LENGTHS: Raw Pathlength | Full Path Length: %4.2f | %4.2f "%(self.rawpathlength,
-                                                           self.orderedpathlength))
+    # self.write("WRONG LENGTHS: Raw Pathlength | Full Path Length: %4.2f | %4.2f "%(self.rawpathlength,
+    #                                                        self.orderedpathlength))
     gcode = self.orderedpaths.togcode()
     with open(outfile,'w') as f:
       for item in gcode: f.write(item+'\n')

@@ -46,7 +46,11 @@ class Drill(Optimize):
     for t in tmp:
       for item in out:
         if item in t: 
-          out[item] = float(t.strip(item))
+          try:
+            out[item] = float(t.strip(item))
+          except:
+            print "Failed on: %s"%(tmp)
+            fail
     return out
     
   def parse_drills(self):
@@ -72,7 +76,6 @@ class Drill(Optimize):
         g,x,y,z = l
         millpath = ToolPath(x=x, y=y, z=z,method=MOVE)
         self.rawpaths.append(millpath)
-        
         
     
 if __name__ == "__main__":
