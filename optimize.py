@@ -11,7 +11,7 @@ from toolpath import ToolPath, distance, getclosestindex
 
 WARN = ['\033[91m', '\033[0m']
 MOVE_DEPTH  =  0.020
-MILL_DEPTH  = -0.005
+MILL_DEPTH  = -0.010
 DRILL_DEPTH = -0.063
 MOVE = 'G00'
 MILL = 'G01'
