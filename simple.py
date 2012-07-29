@@ -10,7 +10,7 @@ RX_BUFFER_SIZE = 128
 # Define command line argument interface
 parser = argparse.ArgumentParser(description='Stream g-code file to grbl. (pySerial and argparse libraries required)')
 # parser.add_argument('gcode_file', type=argparse.FileType('r'), help='g-code filename to be streamed')
-parser.add_argument('-d','--device',action='store_true', default=None, help='serial device path')
+parser.add_argument('-d','--device', help='serial device path')
 parser.add_argument('-q','--quiet',action='store_true', default=False,help='suppress output text')
 args = parser.parse_args()
 
@@ -35,7 +35,7 @@ s = serial.Serial(args.device,9600)
 verbose = True if args.quiet else  False
 
 # Wake up grbl
-print "Initializing grbl..."
+print "Initializing grbl at device: %s"%args.device
 s.write("\r\n\r\n")
 
 # Wait for grbl to initialize and flush startup text in serial input
