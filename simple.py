@@ -2,59 +2,37 @@
 # bufferstream.py
 #  Buffers the stream to ensure not code stream starvation.
 # [2012.01.10] - SJK
-import serial, re, time, sys, argparse, readline
+import re, readline, time
+import communicate, args
 from glob import glob
+from clint.textui import puts,indent,colored
 
-RX_BUFFER_SIZE = 128
+# Initialize the args
+args = args.arg(description='Simple python grbl command')
 
-# Define command line argument interface
-parser = argparse.ArgumentParser(description='Stream g-code file to grbl. (pySerial and argparse libraries required)')
-# parser.add_argument('gcode_file', type=argparse.FileType('r'), help='g-code filename to be streamed')
-parser.add_argument('-d','--device', help='serial device path')
-parser.add_argument('-q','--quiet',action='store_true', default=False,help='suppress output text')
-args = parser.parse_args()
+# get a serial device and wake up the grbl, by sending it some enters
+s = communicate.initSerial(args.device, args.speed, debug=args.debug, quiet=args.quiet)
 
-# Lets automatically search for a arduino for osx / linux.
-if not args.device:
-  # Where they generally are: 
-  devs = ['/dev/tty.usb*','/dev/ttyACM*','/dev/tty.PL*']
-  founddevs = []
-  for d in devs:
-    dev = glob(d)
-    if len(dev) > 0 : founddevs.extend(dev)
-  # ok we found something or we should fail
-  if len(founddevs) == 1:
-    args.device = founddevs[0]
-  else:
-    parser.print_help()
-    print '\n !!! Could not find a single or any device to use, please specify one.'
-    sys.exit(1)
 
-# Initialize
-s = serial.Serial(args.device,9600)
-verbose = True if args.quiet else  False
-
-# Wake up grbl
-print "Initializing grbl at device: %s"%args.device
-s.write("\r\n\r\n")
-
-# Wait for grbl to initialize and flush startup text in serial input
-time.sleep(2)
-s.flushInput()
-
-waittime=0.5
+# now we send commands to the grbl, and wait waitTime for some response.
+waittime = 0.25
 while True:
-  x = raw_input('cmd> ')
-  if x.strip() == 'quit' or x.strip() == 'exit' or x.strip() == 'q':
-    break
-  print '  %s: %s'%('sending',x)
-  s.write(x+'\n')
-  
   out=''
-  time.sleep(waittime)
-  while s.inWaiting() > 0: out += s.read(1)
-  if out != '':
-    print '\n'.join([' |  ' + o for o in out.splitlines()])
+  x = raw_input('grbl> ').strip()
+  if x in ['q','exit','quit','fuckoff']: break
+  with indent(1):
+    puts(colored.blue('Sending: [%s]'%(x)))
+    s.write(x+'\n')
+    
+    # wait for device to respond
+    time.sleep(waittime)
+    
+    # collect message
+    # while s.inWaiting() > 0: out += s.read(1)
+    while s.inWaiting() > 0: out += s.readline()
+    if out != '':
+      with indent(3, quote=colored.green(' | ')):
+        puts(colored.green('\n'.join([o for o in out.splitlines()])))
 
 
 # Close file and serial port

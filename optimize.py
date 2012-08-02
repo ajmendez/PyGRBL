@@ -1,35 +1,10 @@
-#!/usr/bin/env python
-# optimize.py
-# reads and optimizes an gcode file.
-#  python optimize.py file.nc        # optimized: file_opt.nc
-# [2011.12.25] Mendez's Optimizer
-
-import sys, getopt, os
-from toolpath import ToolPath, distance, getclosestindex
 
 
 
-WARN = ['\033[91m', '\033[0m']
-MOVE_DEPTH  =  0.020
-MILL_DEPTH  = -0.004
-DRILL_DEPTH = -0.063
-MOVE = 'G00'
-MILL = 'G01'
-GCODE_BEGIN = '''G20
-G90
-G00 X0.00 Y0.00 Z0.00
-M03
-M04 P1.0 (PAUSE TO CHECK IF OK)
-'''
-GCODE_BETWEEN=['%s Z%6.4f'%(MOVE,MOVE_DEPTH),
-               '%s Z%6.4f'%(MILL, MILL_DEPTH),
-               '%s Z%6.4f'%(MILL, DRILL_DEPTH)]
-GCODE_END='''G00 Z0.500
-G00 X0.00 Y0.00 Z0.500
-G00 X0.00 Y0.00 Z0.000
-'''
-GCODE_MOVE = '%s X'%(MOVE)
-GCODE_MILL = '%s X'%(MILL)
+
+
+
+
 
 class Paths(list):
   def totallength(self):
