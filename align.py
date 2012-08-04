@@ -3,8 +3,8 @@
 # [2012.08.03] Mendez written
 import readline, sys, re, time
 from util import getch
-import argv, communicate
-from clint.textui import colored, puts, indent
+from lib.clint.textui import colored, puts, indent
+from lib import argv, communicate
 
 QUIT = ['q','Q']
 UPDATE =['u','U']
@@ -14,6 +14,12 @@ RIGHT = ['\x1b[C']
 LEFT = ['\x1b[D']
 RAISE = ['a','A']
 LOWER = ['z','Z']
+
+# I might also want to implement this
+# curses.KEY_UP   
+# curses.KEY_DOWN 
+# curses.KEY_LEFT 
+# curses.KEY_RIGHT
 
 startCommand = '''\
 G20 (Inches)
@@ -32,22 +38,9 @@ a/A / z/Z  : Move in Z [Raise/Lower]
 moveLength = 0.100 # Inches [0.100] : amount to move use update(), to change
 location = dict(X=0.0, Y=0.0, Z=0.0) # store the current location inches
 
+
+
 # Some helper functions, scroll down for tasty bits
-
-
-def run(cmd):
-  '''Sends gCode to the serial device, also prints it nicely...'''
-  with indent(1):
-    puts(colored.blue('Sending: [%s]'%cmd))
-    s.write(cmd)
-    time.sleep(waittime)
-    out = ''
-    while s.inWaiting() > 0: out += s.readline()
-    if out != '':
-      with indent(3, quote=colored.green(' | ')):
-        puts(colored.green('\n'.join([o for o in out.splitlines()])))
-  
-  
 def move(direction=''):
   '''Figures out what to move'''
   c = re.match(r'(?P<axis>X|Y|Z)(?P<dir>\+|\-)',direction, re.IGNORECASE)
@@ -55,10 +48,11 @@ def move(direction=''):
   
   sign = '' if c.group('dir')=='+' else '-'
   location[c.group('axis')] += float(sign+'1')*(moveLength)
-  run('G%02i %s%s%0.3f'%(0, # gcode cmd value using MOVE
-                       sign,
-                       c.group('axis'),
-                       moveLength) )
+  s.run('G%02i %s%s%0.3f'%(0, # gcode cmd value using MOVE
+                           sign, #Not sure if gcode handles '+'/'-' so ''/'-'
+                           c.group('axis'), # X/Y/Z
+                           moveLength) )
+  # Give the user some idea where we are.
   isAt = ', '.join(['%s=%.3f'%(a,location[a]) for a in location])
   puts(colored.blue('    Currently at: %s'%isAt))
  
@@ -94,23 +88,19 @@ Current Nudge length: %.3f inch [Default: 100mil].
 
 
 
-# This is the actual program
-
 
 # Get the arguments passed into the program
 args = argv.arg(description='Simple python alignment tool')
 
 # Setup the serial device
-waittime = 0.25
+
 s = communicate.initSerial(args.device, args.speed, debug=args.debug, quiet=args.quiet)
-
-
 
 
 # lets begin by giving the user some nice information
 puts(colored.blue(HELP))
 for line in startCommand.splitlines():
-  run(line)
+  s.run(line)
 
 # ok now grab a character and decide what to do.
 while 1:

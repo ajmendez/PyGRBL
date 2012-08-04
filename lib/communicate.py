@@ -3,19 +3,38 @@
 # [2012.07.30] - Mendez
 
 import serial, time
+from clint.textui import puts, indent, colored
 
-def initSerial(device, speed, debug=False, quiet=False):
-  if debug:
-    s = FakeSerial()
-  else:
-    s = serial.Serial(device,speed)
+
+
+
+
+def initSerial(device, speed, debug=False, quiet=False, waittime=None):
+  if not waittime: waittime=0.25
+  if debug: s = FakeSerial()
+  else:     s = serial.Serial(device, speed)
   
-  if not quiet:
-    print "Initializing grbl at device: %s\n  Please wait 1 second for device..."%(device)
-  s.write("\r\n\r\n")
+  def run(cmd):
+    '''Extends either serial device with a nice run command that prints out the
+    command and also gets what the device responds with.'''
+    print cmd
+    with indent(1):
+      puts(colored.blue('Sending: [%s]'%cmd))
+      s.write(cmd)
+      time.sleep(waittime)
+      out = ''
+      while s.inWaiting() > 0: out += s.readline()
+      if out != '':
+        with indent(3, quote=colored.green(' | ')):
+          puts(colored.green('\n'.join([o for o in out.splitlines()])))
+  s.run = run
+  
   # Wait for grbl to initialize and flush startup text in serial input
-  if not debug:
-    time.sleep(1)
+  if not quiet: print '''\
+Initializing grbl at device: %s
+ Please wait 1 second for device...'''%(device)
+  s.write("\r\n\r\n")
+  if not debug: time.sleep(0.5)
   s.flushInput()
   
   return s
@@ -23,8 +42,10 @@ def initSerial(device, speed, debug=False, quiet=False):
 
 
 
+
 class FakeSerial():
-    '''This is a fake serial device that mimics a true serial devie and does read/write.'''
+    '''This is a fake serial device that mimics a true serial devie and 
+    does fake read/write.'''
     def __init__(self):
         '''init the fake serial and print out ok'''
         self.waiting=1  # If we are waiting

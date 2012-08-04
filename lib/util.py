@@ -19,16 +19,22 @@ def deltaTime(start):
   of time passed since the start. '''
   
   diff = datetime.now() - start
-  seconds = diff.seconds
+  # seconds = diff.seconds # limited to 1 second, so lets get fractions
+  seconds = diff.microseconds/float(10**6)
   out = []
-  epocs=[[3600,'hour'],[60,'minute'],[1,'second']]
-  while seconds > 0:
+  epocs = [ [3600,'hour'],
+            [60,'minute'],
+            [1,'second'],
+            [0.001,'milisecond'] ]
+  factors,tmp = zip(*epocs)
+  while seconds > min(factors):
     for factor, noun in epocs:
       if seconds >= factor:
         delta = seconds/factor
         if delta > 1: noun +='s'
         out.append('%d %s'%(delta,noun))
         seconds -= factor*(delta)
+  
   return ', '.join(out)
 
 

@@ -10,18 +10,16 @@ Most of these commands should support:
 
 
     * -d -- Enable debug serial class
-    * -w -- Enable gcodedrawer watch app
-    * -b -- [limited] Basic terminal functionality 
+    * -q -- Somewhat quieter operation
 
 
-    * command.py  -- Send basic commands to grbl, also move functionality.
-    * origin.py   -- keystroke origin finder.
+    * command.py  -- Send basic commands to grbl
+    * align.py    -- Use arrowkeys/a/z to move mill bit
     * stream.py   -- Stream gcode to grbl.
     * optimize.py -- Optimization routine.
-    
-    * flatten.py  -- Generate raster gcode script.
 
-    * bufferstream.py -- an attempt to add an additional buffer layer.
+    * flatten.py    -- Generate raster gcode script.
+    * findheight.py -- Generate a height gcode script
 
 
 grbl settings:
@@ -29,15 +27,13 @@ grbl settings:
     |  $0 = 188.976 (steps/mm x)
     |  $1 = 188.976 (steps/mm y)
     |  $2 = 188.976 (steps/mm z)
-    |  $3 = 50 (microseconds step pulse)
-    |  $4 = 100.000 (mm/min default feed rate)
-    |  $5 = 300.000 (mm/min default seek rate)
+    |  $3 = 100 (microseconds step pulse)
+    |  $4 = 130.000 (mm/min default feed rate)
+    |  $5 = 260.000 (mm/min default seek rate)
     |  $6 = 0.200 (mm/arc segment)
-    |  $7 = 160 (step port invert mask. binary = 10100000)
-    |  $8 = 15.000 (acceleration in mm/sec^2)
+    |  $7 = 96 (step port invert mask. binary = 1100000)
+    |  $8 = 4.000 (acceleration in mm/sec^2)
     |  $9 = 0.050 (cornering junction deviation in mm)
-    |  '$x=value' to set parameter or just '$' to dump current settings
-    |  ok
 
 
 
@@ -47,14 +43,15 @@ Extra:
 
 ToDo:
 -----
-    * figure out readline + curses, or just switch to readline only.
     * Document EVERYTHING.
 
 History:
 --------
     * [2011/12] -- Built by Mendez with much drinking and eggnog
     * [2012/01] -- Pushed without documentation to bitbucket.
-    
+    * [2012/08] -- Updated documentation and cleaned up.
+
+
 Repository management:
 ---------------------
 

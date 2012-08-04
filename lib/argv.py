@@ -8,7 +8,8 @@ from glob import glob
 from util import error
 
 
-def arg(description=None, getDevice=True, getFile=False, defaultSpeed=9600):
+def arg(description=None, getDevice=True, defaultSpeed=9600,
+        getFile=False, getMultiFiles=False):
   '''This is a simple arugment parsing function for all of the command line tools'''
   if not description:
     description='python grbl arguments'
@@ -22,23 +23,30 @@ def arg(description=None, getDevice=True, getFile=False, defaultSpeed=9600):
                       action='store_true',
                       default=False,
                       help='[DEBUG] use a fake Serial port that prints to screen')
-  parser.add_argument('-s','--speed',
-                      # action='store_true',
-                      default=defaultSpeed,
-                      type=int,
-                      help='Serial port speed [%d]'%(defaultSpeed))
                       
-  # by default just get the device, otherwise get a file first since device can be found.
+  # by default just get the device
+  # HOWEVER if we want a file to be run, get it FIRST
   if getFile:
+    nargs = '+' if getMultiFiles else 1
     parser.add_argument('gcode', 
+                        nargs=nargs,
                         type=argparse.FileType('r'), 
                         help='gCode file to be read and processed.')
+  
+  # if we want a device get an optional speed / and a device
   if getDevice:
+    parser.add_argument('-s','--speed',
+                        # action='store_true',
+                        default=defaultSpeed,
+                        type=int,
+                        help='Serial port speed [%d]'%(defaultSpeed))
     parser.add_argument('device',
                         nargs='?',
                         # action='store_true',
                         default=False,
-                        help='The GRBL device to drive')
+                        help='The GRBL device to drive')  
+
+
   args = parser.parse_args()
   
   # lets see if we can find a default device to connect too.
@@ -58,6 +66,7 @@ def arg(description=None, getDevice=True, getFile=False, defaultSpeed=9600):
     else:
       parser.print_help()
       error('Found %d device(s) -- You need to connect a device, update %s, or specify wich device you want to use.'%(len(founddevs),sys.argv[0]))
-      
+  
+  args.name = sys.argv[0]
   
   return args
