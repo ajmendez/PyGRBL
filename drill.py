@@ -7,7 +7,7 @@
 import sys, getopt, os
 from toolpath import distance
 from toolpath import Toolpath2 as ToolPath
-from optmize import Optimize, Paths,  MILL,MOVE, GCODE_MILL,GCODE_BEGIN,GCODE_BETWEEN, GCODE_END
+from optimize import Optimize, Paths,  MILL,MOVE, GCODE_MILL,GCODE_BEGIN,GCODE_BETWEEN, GCODE_END
 
 
 class DrillPaths(Paths):
