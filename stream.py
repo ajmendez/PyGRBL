@@ -4,23 +4,24 @@
 
 import re, sys, time
 from datetime import datetime,timedelta
-from clint.textui import puts,indent,colored,progress
-import communicate, argv
-from util import deltaTime
+from clint.textui import puts, colored, progress
+from lib import communicate, argv
+from lib.util import deltaTime
 
 RX_BUFFER_SIZE = 128
 
 # Initialize the args
-args = argv.arg(description='Simple python GRBL streamer', getFile=True)
+args = argv.arg(description='Simple python GRBL streamer', 
+                getFile=True)
 
 # get a serial device and wake up the grbl, by sending it some enters
-s = communicate.initSerial(args.device, args.speed, debug=args.debug, quiet=args.quiet)
+serial = communicate.initSerial(args.device, 
+                                args.speed, 
+                                debug=args.debug, 
+                                quiet=args.quiet)
 
 start = datetime.now()
-with indent(1,quote='|'):
-  puts(colored.blue('Starting file: %s \n at %s'%(args.gcode.name, start)))
-
-verbose = not args.quiet
+puts(colored.blue(' Starting file: %s \n at %s'%(args.gcode.name, start)))
 
 # read the full file and then close so that it cannot change.
 # I am pretty sure even at 1M lines, I should be able to hold this in mem
@@ -39,23 +40,42 @@ for i,line in enumerate(progress.bar(lines)):
   out = ''
   nOk = 0
   # if the serial is has text and we have not filled the buffer
-  while sum(inBuf) >= RX_BUFFER_SIZE-1 | s.inWaiting() :
-    tmp = s.readline().strip() # grab a line from grbl
-    if tmp.find('ok') < 0 and tmp.find('error') < 0:
-      with indent(1): puts(' DEBUG: '%(tmp))
+  while sum(inBuf) >= RX_BUFFER_SIZE-1 | serial.inWaiting():
+    tmp = serial.readline().strip()
+    if tmp.find('ok') < 0:
+      puts(colored.red(' DEBUG: %s'%(tmp)+' '*20))
+      if tmp.find('error') > 0:
+        puts(colored.red('  !!! FAILURE'))
+        sys.exit(1)
+      # If we got here, probably debugging, CHECK!
+      out += 'DEBUG'
+      inBuf.pop(0)
     else:
       out += tmp
       inBuf.pop(0)
+    
     #  send the command
-    s.write(l)
-    if verbose:
-      with indent(1, quote='|'):
-        puts(colored.blue('[%d][Sent: %s][Buf:%d]'%(i,l.strip(),sum(inBuf))) +
-             colored.green('[Rec:%s]'%(out))+' '*12)
+    serial.write(l)
+    if not args.quiet:
+      puts(colored.blue('[%d][Sent: %s][Buf:%d]'%(i,l.strip(),sum(inBuf))) +
+           colored.green('[Rec:%s]'%(out))+' '*12)
+      # print ('[%d][Sent: %s][Buf:%d]'%(i,l.strip(),sum(inBuf)) +
+      #       '[Rec:%s]'%(out)+' '*12)
 
 # It seems everything is ok, but dont reset everything untill buffer completes
-puts(colored.green('gCode finished streaming! \n Finished at: %s \n RunTime: %s'%(datetime.now(), deltaTime(start))))
-puts(colored.red('WARNING: Please make sure that the buffer clears before finishing...'))
-raw_input('Press any key to finish')
-raw_input(' Are you sure? Any key to REALLY exit.')
-s.close()
+puts(
+colored.green('''
+gCode finished streaming!
+  Finished at: %s
+  RunTime: %s'''%(datetime.now(), deltaTime(start))) + 
+colored.red('''
+!!! WARNING: Please make sure that the buffer clears before finishing...''') )
+# print '''
+# gCode finished streaming!
+#   Finished at: %s
+#   RunTime: %s
+#   !!!  WARNING: Please make sure that the buffer clears before finishing...
+# '''%(datetime.now(), deltaTime(start))
+raw_input('<Press any key to finish>')
+raw_input(' >> Are you sure? Any key to REALLY exit.')
+serial.close()

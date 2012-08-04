@@ -9,20 +9,22 @@ from clint.textui import puts, colored
 
 
 
-def initSerial(device, speed, debug=False, quiet=False, waittime=None):
-  if not waittime: waittime=0.25
-  if debug: s = FakeSerial()
-  else:     s = serial.Serial(device, speed)
+def initSerial(device, speed, debug=False, quiet=False, timeout=None):
+  if not timeout: timeout = 0.25
+  if debug:
+    s = FakeSerial()
+  else:
+    s = serial.Serial(device, speed, timeout=timeout)
   
   def run(cmd):
     '''Extends either serial device with a nice run command that prints out the
     command and also gets what the device responds with.'''
     puts(colored.blue(' Sending: [%s]'%cmd ))
     s.write(cmd)
-    time.sleep(waittime)
     out = ''
-    while s.inWaiting() > 0: out += s.read(1)
-    # while s.inWaiting() > 0: out += s.readline() # Does not work
+    time.sleep(timeout)
+    # while s.inWaiting() > 0: out += s.read(10)
+    while s.inWaiting() > 0: out += s.readline()
     if out != '':
       puts(colored.green('  | '+ '\n'.join([o for o in out.splitlines()])))
   s.run = run
@@ -34,7 +36,7 @@ Initializing grbl at device: %s
   s.write("\r\n\r\n")
   if not debug: time.sleep(0.5)
   s.flushInput()
-  
+  s.run('$')
   return s
 
 

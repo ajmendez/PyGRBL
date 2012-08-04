@@ -50,9 +50,8 @@ def arg(description=None, getDevice=True, defaultSpeed=9600,
   args = parser.parse_args()
   
   # lets see if we can find a default device to connect too.
-  if args.debug:
-    args.device='fakeSerial'
-  
+  if args.debug: args.device='fakeSerial'
+  if (getFile) and (not getMultiFiles): args.gcode = args.gcode[0]
   if getDevice and not args.device:
     # Where they generally are: 
     devs = ['/dev/tty.usb*','/dev/ttyACM*','/dev/tty.PL*','/dev/ttyUSB*']
@@ -66,6 +65,7 @@ def arg(description=None, getDevice=True, defaultSpeed=9600,
     else:
       parser.print_help()
       error('Found %d device(s) -- You need to connect a device, update %s, or specify wich device you want to use.'%(len(founddevs),sys.argv[0]))
+  
   
   args.name = sys.argv[0]
   
