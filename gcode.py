@@ -33,7 +33,7 @@ class GCode(list):
     
     comment = r'\(.*?\)'
     whitespace = r'\s'
-    command = r''.join(['(?P<%s>%s(?P<%snum>-?\d+(?P<%sdecimal>\.?)\d*))?'%(c,c,c,c) for c in CMDS])
+    command = r''.join([r'(?P<%s>%s(?P<%snum>-?\d+(?P<%sdecimal>\.?)\d*))?'%(c,c,c,c) for c in CMDS])
     for i,line in enumerate(progress.bar(self.lines)):
     # for i,line in enumerate(self.lines):
       l = line.strip()

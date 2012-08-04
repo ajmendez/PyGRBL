@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# args.py : a simple argument parser for the command line tools
+# argv.py : a simple argument parser for the command line tools
 # [2012.07.30] - Mendez
 
 import argparse, sys

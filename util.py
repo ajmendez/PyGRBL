@@ -52,3 +52,35 @@ def uniqify(seq, idfun=None):
        seen[marker] = 1
        result.append(item)
    return result
+
+
+# Get a character test
+import os, sys, termios, fcntl
+from threading import Timer
+
+def getch():
+  '''Get a character from the terminal.  Accepts escape sequences and also returns them'''
+  fd = sys.stdin.fileno()
+  
+  # Enables some nice bits for the terminal so that we can grab the charcers 
+  # without blocking things and saving the old flags
+  oldterm = termios.tcgetattr(fd)
+  newattr = termios.tcgetattr(fd)
+  newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+  termios.tcsetattr(fd, termios.TCSANOW, newattr)
+  
+  oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
+  fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
+  
+  try:        
+    while 1:            
+      try:
+        # Try to get at most 10 bytes of an escape sequence
+        c = sys.stdin.read(10)
+        break
+      except IOError: 
+        pass
+  finally:
+    termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
+    fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+  return c

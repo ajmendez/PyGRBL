@@ -165,7 +165,8 @@ class Tool(list):
   def getClosestMill(self, X):
     ''' Improved getNextMill, optimizes the location to start in the mill 
     Now checks to see if the starting and ending point are close so can be 
-    reordered'''
+    reordered.  This ends up being a traveling salesman problem, so 
+    keeping with this solution is easiest. '''
     # get the path with a point that is closest to X
     distances = [distance(mill.closestLocation(X),X) for mill in self.mills]
     index = distances.index(min(distances))
@@ -176,83 +177,6 @@ class Tool(list):
     mill.reorderLocations(X)
     return mill
   
-  '''Here lies two recursive patterns to try to improve the shortest path method.
-  Both failed spectacuraly since we are always returning to zero or the start of
-  the next path, this does not seem to get us anything. '''
-  
-  # def getMinMill(self,X):
-  #   def getDistances(X,mills):
-  #     return [distance(mill.orderMill(X)[0],X) for mill in mills]
-  #   
-  #   
-  #   
-  #   distances = getDistances(X,self.mills)
-  #   print ', '.join(['%6.3f'%x for x in  distances])
-  #   for i,mill in enumerate(self.mills):
-  #     others = deepcopy(self.mills)
-  #     others.remove(mill)
-  #     mill.reorderLocations(X)
-  #     d = getDistances(mill[0], others)
-  #     if len(d) > 0: 
-  #       distances[i] += min(d)
-  #       
-  #       for j, m in enumerate(others):
-  #         nope = deepcopy(others)
-  #         nope.remove(m)
-  #         m.reorderLocations(X)
-  #         e = getDistances(m[0], nope)
-  #         if len(e) > 0:
-  #           distances[i] += min(e)
-  #           
-  #           for k, n in enumerate(nope):
-  #             nap = deepcopy(nope)
-  #             nap.remove(n)
-  #             n.reorderLocations(X)
-  #             f = getDistances(n[0], nap)
-  #             if len(f) > 0:
-  #               distances[i] += min(f)
-  #   
-  #   
-  #   index = distances.index(min(distances))
-  #   print ', '.join(['%6.3f'%x for x in  distances]),
-  #   print colored.red('%6.3f'%min(distances))
-  #   mill = self.mills.pop(index)
-  #   mill.reorderLocations(X)
-  #   return mill
-    
-  
-  # def FailureRecurse(self, X, nSearch=2):
-  #   ''' Look up to nSearch mill paths, to find minimum path.
-  #   This is broken trying something else.'''
-  #   def findDistances(X, mills, n):
-  #     '''Recursively find distances. keep going down till there are no more mill
-  #     paths or n is zero. returns distance array if finished.
-  #     [2012.08.02] This is pretty slow for no optimization
-  #     [2012.08.02] switched to using a slightly faster ordering implementation...'''
-  #     if len(mills) == 0 or n == 0 : return 0.0
-  #     # print ' '*2*(nSearch-n), n, len(mills)
-  #     d = []
-  #     for i, mill in enumerate(mills[:2]):
-  #       # Get the closest mill to this location
-  #       mill = mill.orderMill(X)
-  #       
-  #       # add the distance to this mill with the results from searching down.
-  #       d.append( ( distance(mill[0], X) + 
-  #                   findDistances(mill[-1], 
-  #                   # others,
-  #                   mills[:i]+mills[i+1:],
-  #                   n-1) ) )
-  #     
-  #     print '%02i'%n,'  '*(nSearch-n+1),', '.join(['%.2f'%(x) for x in d])
-  #     
-  #     if n == nSearch: return d
-  #     return min(d)
-  #   
-  #   distances = findDistances(X, self.mills, nSearch)
-  #   index = distances.index(min(distances))
-  #   mill = self.mills.pop(index)
-  #   mill.reorderLocations(X)
-  #   return mill
   
   def reTool(self, moveHeight=None):
     '''Rebuild the toolpath using the Mills
@@ -272,18 +196,12 @@ class Tool(list):
     millMove(self, origin(), heightInches)
   
   
-  
-  
-  
   def buildGcode(self):
     '''This returns a string with the GCODE in it.'''
     lines = []
     iMill = 1
     for i,[x,y,z,t] in enumerate(self):
-      # if ([l[3] for l in self[i:i+4]] == [0,0,1,1]): # old method
-      # print i, [l[3] for l in self[i-1:i+2]]
       if ([l[3] for l in self[i-1:i+2]] == [0,0,1]):
-        # print 'here'
         lines.append('\n(Mill: %04i)'%(iMill))
         iMill += 1
       lines.append('G%02i   X%.3f Y%.3f Z%.3f'%(t,x,y,z))
@@ -295,7 +213,6 @@ class Tool(list):
                   ncommand=len(self),
                   footer='')
     return Template(TEMPLATE).substitute(params)
-    # print output
 
 
 

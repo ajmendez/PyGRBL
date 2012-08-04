@@ -17,14 +17,7 @@ class Mill(list):
               self.isClosed(),
               self.isDrill(),
               ''.join(['\n | %s, '%(str(x)) for x in self[0:n]]) ) )
-
-  # def pop(self,i=None):
-  #   '''Deque pop does not work like list pop'''
-  #   if not i: i=-1
-  #   self.rotate(i)
-  #   x = super(Mill,self).pop()
-  #   self.rotate(-i)
-  #   return x
+  
   
   def length(self):
     '''Calculate the length in inches of this mill path'''
@@ -56,15 +49,7 @@ class Mill(list):
   def closestLocation(self,X):
     '''Get the location closest to X'''
     return self[self.closestIndex(X)]
-  
-  def orderMill(self,X):
-    '''Return a copy of the mill reordered at the index.'''
-    if self.isClosed():
-      index = self.closestIndex(X)
-      return self[index:] + self[:index]
-    else:
-      return self
-  
+
   def reorderLocations(self, X):
     '''[SLOW] Reorder the mill to be close to X.  Only do this if the path is closed.
     Originally I had this as a deque object but that was stupid becuase it caused so many problems with slices'''
@@ -72,11 +57,6 @@ class Mill(list):
       index = self.closestIndex(X)
       for i in range(index+1): self.append(self.pop(0)) 
       self.append(self[0])
-      # self.rotate(index) #
-      # tmp = collections.deque(self)
-      # print 'temp',tmp[0]
-      # tmp.rotate(100)
-      # self = list(tmp)
       
   
   def isClosed(self):

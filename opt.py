@@ -6,7 +6,7 @@ import sys, getopt, os
 from datetime import datetime
 from pprint import pprint
 
-import args
+import argv
 from gcode import GCode
 from tool import Tool
 from clint.textui import colored, puts, indent, progress
@@ -17,7 +17,7 @@ Z_SPOT  =   -9 # mil  [-9] : Mill depth for spot drill holes
 Z_DRILL =  -63 # mil [-63] : Mill depth for full drill holes
 
 # Initialize the args
-args = args.arg(description='Python GCode optimizations', getFile=True, getDevice=False)
+args = argv.arg(description='Python GCode optimizations', getFile=True, getDevice=False)
 
 start = datetime.now()
 puts(colored.blue('Optimizing file: %s\n Started: %s'%(args.gcode.name,datetime.now())))
@@ -31,18 +31,10 @@ gcode.parse()
 # Take the list and make a toolpath out of it.
 tool = Tool(gcode)
 tool.groupMills()
-# for m in tool.mills: print id(m)
+print 'Toolpath length: %.2f inches, (mill only: %.2f)'%(tool.length(),tool.millLength())
 tool.setMillHeight(Z_MILL,Z_SPOT)
 tool.uniqMills()
 
-print 'Toolpath length: %.2f inches, (mill only: %.2f)'%(tool.length(),tool.millLength())
-# for m in tool.mills:
-#   print m
-#   for x in m:
-#     print '    ',x
-
-while len(tool.mills) > 20: tool.mills.pop()
-      
 
 # This starts the optimization process:
 # start at here, and go to the next path which is closest is the overall plan
@@ -64,24 +56,13 @@ while len(tool.mills) > 0:
   newMills.append(mill)
   here = newMills[-1][-1]
 tool.mills.extend(newMills)
-
 tool.reTool(Z_MOVE)
 tool.uniq()
 print 'Toolpath length: %.2f inches, (mill only: %.2f)'%(tool.length(),tool.millLength())
 
-
-
+# Write this mess to a file
 output = tool.buildGcode()
-
 outfile = '_new'.join(os.path.splitext(args.gcode.name))
 puts(colored.green('Writing: %s'%outfile))
 with open(outfile,'w') as f:
   f.write(output)
-# print output
-
-# for m in tool.mills:
-#   print m
-  # for x in m:
-  #   print '    ',x
-
-sys.exit(1)

@@ -3,12 +3,12 @@
 #  Buffers the stream to ensure not code stream starvation.
 # [2012.01.10] - SJK
 import re, readline, time
-import communicate, args
+import communicate, argv
 from glob import glob
 from clint.textui import puts,indent,colored
 
 # Initialize the args
-args = args.arg(description='Simple python grbl command')
+args = argv.arg(description='Simple python grbl command')
 
 # get a serial device and wake up the grbl, by sending it some enters
 s = communicate.initSerial(args.device, args.speed, debug=args.debug, quiet=args.quiet)

@@ -5,13 +5,13 @@
 import re, sys, time
 from datetime import datetime,timedelta
 from clint.textui import puts,indent,colored,progress
-import communicate, args
+import communicate, argv
 from util import deltaTime
 
 RX_BUFFER_SIZE = 128
 
 # Initialize the args
-args = args.arg(description='Simple python GRBL streamer', getFile=True)
+args = argv.arg(description='Simple python GRBL streamer', getFile=True)
 
 # get a serial device and wake up the grbl, by sending it some enters
 s = communicate.initSerial(args.device, args.speed, debug=args.debug, quiet=args.quiet)
