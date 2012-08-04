@@ -2,8 +2,8 @@
 # communicate.py : a simple serial device that can be a fake device.
 # [2012.07.30] - Mendez
 
-import serial, time
-from clint.textui import puts, indent, colored
+import serial, time, readline
+from clint.textui import puts, colored
 
 
 
@@ -17,16 +17,14 @@ def initSerial(device, speed, debug=False, quiet=False, waittime=None):
   def run(cmd):
     '''Extends either serial device with a nice run command that prints out the
     command and also gets what the device responds with.'''
-    print cmd
-    with indent(1):
-      puts(colored.blue('Sending: [%s]'%cmd))
-      s.write(cmd)
-      time.sleep(waittime)
-      out = ''
-      while s.inWaiting() > 0: out += s.readline()
-      if out != '':
-        with indent(3, quote=colored.green(' | ')):
-          puts(colored.green('\n'.join([o for o in out.splitlines()])))
+    puts(colored.blue(' Sending: [%s]'%cmd ))
+    s.write(cmd)
+    time.sleep(waittime)
+    out = ''
+    while s.inWaiting() > 0: out += s.read(1)
+    # while s.inWaiting() > 0: out += s.readline() # Does not work
+    if out != '':
+      puts(colored.green('  | '+ '\n'.join([o for o in out.splitlines()])))
   s.run = run
   
   # Wait for grbl to initialize and flush startup text in serial input

@@ -3,8 +3,6 @@
 # [2012.08.02] - Mendez: cleaned up using my libraries
 # [2012.01.10] - SJK: original version
 import re, readline, time
-from glob import glob
-from lib.clint.textui import puts, indent, colored
 from lib import communicate, argv
 
 # Initialize the args

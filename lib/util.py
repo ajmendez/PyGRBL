@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # util.py : some nice things
 # [2012.07.30] - Mendez
-import sys
+import sys, os, termios, fcntl
 from clint.textui import colored, puts, indent
 from datetime import datetime
 from math import sqrt
@@ -59,10 +59,6 @@ def uniqify(seq, idfun=None):
        result.append(item)
    return result
 
-
-# Get a character test
-import os, sys, termios, fcntl
-from threading import Timer
 
 def getch():
   '''Get a character from the terminal.  Accepts escape sequences and also returns them'''
