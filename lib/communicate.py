@@ -7,38 +7,46 @@ from clint.textui import puts, colored
 
 
 
-
-
-def initSerial(device, speed, debug=False, quiet=False, timeout=None):
-  if not timeout: timeout = 0.25
-  if debug:
-    s = FakeSerial()
-  else:
-    s = serial.Serial(device, speed, timeout=timeout)
+class Communicate():
+  def __init__(self, device, speed, debug=False, quiet=False, timeout=None):
+    if not timeout: timeout = 0.25
+    # select the right serial device
+    if debug: s = FakeSerial()
+    else:     s = serial.Serial(device, speed, timeout=timeout)
+    
+    if not quiet: print '''Initializing grbl at device: %s
+  Please wait 1 second for device...'''%(device)
+    s.write("\r\n\r\n")
+    if not debug: time.sleep(1)
+    s.flushInput()
+    self.s = s
+    self.run('$')
   
-  def run(cmd):
+  def run(self, cmd):
     '''Extends either serial device with a nice run command that prints out the
     command and also gets what the device responds with.'''
     puts(colored.blue(' Sending: [%s]'%cmd ))
-    s.write(cmd)
+    self.write(cmd)
     out = ''
-    time.sleep(timeout)
+    time.sleep(self.timeout)
     # while s.inWaiting() > 0: out += s.read(10)
-    while s.inWaiting() > 0: out += s.readline()
+    while self.inWaiting() > 0: out += self.readline()
     if out != '':
       puts(colored.green('  | '+ '\n'.join([o for o in out.splitlines()])))
-  s.run = run
-  
-  # Wait for grbl to initialize and flush startup text in serial input
-  if not quiet: print '''\
-Initializing grbl at device: %s
- Please wait 1 second for device...'''%(device)
-  s.write("\r\n\r\n")
-  if not debug: time.sleep(0.5)
-  s.flushInput()
-  s.run('$')
-  return s
 
+  def __enter__(self):
+    return self
+  
+  def __exit__(self, type, value, traceback):
+    self.s.close()
+    return isinstance(value, TypeError)
+  
+  def __getattr__(self, name):
+    '''if no command here, see if it is in serial.'''
+    try:
+      return getattr(self.s, name)
+    except KeyError:
+      raise AttributeError(name)
 
 
 

@@ -2,9 +2,10 @@
 # align.py : Align the drill bit with the keyboard
 # [2012.08.03] Mendez written
 import readline, sys, re, time
-from lib.util import getch
-from lib.clint.textui import colored, puts, indent
-from lib import argv, communicate
+from lib.util import getch, Terminal
+from lib.clint.textui import colored, puts
+from lib import argv
+from lib.communicate import Communicate
 
 QUIT = ['q','Q']
 UPDATE =['u','U']
@@ -16,10 +17,7 @@ RAISE = ['a','A']
 LOWER = ['z','Z']
 
 # I might also want to implement this
-# curses.KEY_UP   
-# curses.KEY_DOWN 
-# curses.KEY_LEFT 
-# curses.KEY_RIGHT
+# from curses import KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT
 
 startCommand = '''\
 G20 (Inches)
@@ -48,10 +46,10 @@ def move(direction=''):
   
   sign = '' if c.group('dir')=='+' else '-'
   location[c.group('axis')] += float(sign+'1')*(moveLength)
-  s.run('G%02i %s%s%0.3f'%(0, # gcode cmd value using MOVE
-                           sign, #Not sure if gcode handles '+'/'-' so ''/'-'
-                           c.group('axis'), # X/Y/Z
-                           moveLength) )
+  serial.run('G%02i %s%s%0.3f'%(0, # gcode cmd value using MOVE
+                                sign, #Not sure if gcode handles '+'/'-' so ''/'-'
+                                c.group('axis'), # X/Y/Z
+                                moveLength) )
   # Give the user some idea where we are.
   isAt = ', '.join(['%s=%.3f'%(a,location[a]) for a in location])
   puts(colored.blue('    Currently at: %s'%isAt))
@@ -92,29 +90,45 @@ Current Nudge length: %.3f inch [Default: 100mil].
 # Get the arguments passed into the program
 args = argv.arg(description='Simple python alignment tool')
 
-# Setup the serial device
+# Using with logic to handle tear down and the sort.
+with Communicate(args.device, args.speed, timeout=args.timeout,
+                 debug=args.debug,
+                 quiet=args.quiet) as serial:
+  # lets begin by giving the user some nice information
+  puts(colored.blue(HELP))
+  for line in startCommand.splitlines():
+    serial.run(line)
 
-s = communicate.initSerial(args.device, args.speed, debug=args.debug, quiet=args.quiet)
-
-
-# lets begin by giving the user some nice information
-puts(colored.blue(HELP))
-for line in startCommand.splitlines():
-  s.run(line)
+  with Terminal() as terminal:
+    while True:
+      print '<waiting for key>'
+      c = terminal.getline()
+      # if not c: time.sleep(0.25)
+      if   c in   QUIT: sys.exit() # Quit the program
+      elif c in UPDATE: moveLength = update()
+      elif c in     UP: move('X-')
+      elif c in   DOWN: move('X+')
+      elif c in  RIGHT: move('Y-')
+      elif c in   LEFT: move('X+')
+      elif c in  RAISE: move('Z+')
+      elif c in  LOWER: move('Z-')
+      else : print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
+    
+    
 
 # ok now grab a character and decide what to do.
-while 1:
-  print '<waiting for key>'
-  c = getch()
-  if not c:
-    time.sleep(waittime)
-  if c in 'q': sys.exit() # Quit the program
-  elif c in UPDATE: moveLength = update()
-  elif c in    UP: move('X-')
-  elif c in  DOWN: move('X+')
-  elif c in RIGHT: move('Y-')
-  elif c in  LEFT: move('X+')
-  elif c in RAISE: move('Z+')
-  elif c in LOWER: move('Z-')
-  else: print 'noop', # it is nice to give the user some idea what happened
-    # print "PRINT: ",repr(c) 
+# while 1:
+#   print '<waiting for key>'
+#   c = getch()
+#   # if not c: time.sleep(0.25)
+#   if   c in   QUIT: sys.exit() # Quit the program
+#   elif c in UPDATE: moveLength = update()
+#   elif c in     UP: move('X-')
+#   elif c in   DOWN: move('X+')
+#   elif c in  RIGHT: move('Y-')
+#   elif c in   LEFT: move('X+')
+#   elif c in  RAISE: move('Z+')
+#   elif c in  LOWER: move('Z-')
+#   else : print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
+
+serial.close()

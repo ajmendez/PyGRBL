@@ -61,7 +61,9 @@ def uniqify(seq, idfun=None):
 
 
 def getch():
-  '''Get a character from the terminal.  Accepts escape sequences and also returns them'''
+  '''Get a character from the terminal.
+  Accepts escape sequences and also returns them.
+  This kills the cpu, try getchar.'''
   fd = sys.stdin.fileno()
   
   # Enables some nice bits for the terminal so that we can grab the charcers 
@@ -86,3 +88,35 @@ def getch():
     termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
     fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
   return c
+
+class Terminal():
+  def __enter__(self):
+    '''Build it up for a with'''
+    self.fd = sys.stdin.fileno()
+    self.oldterm = termios.tcgetattr(self.fd)
+    self.oldflags = fcntl.fcntl(self.fd, fcntl.F_GETFL)
+    
+    # Enables some nice bits for the terminal so that we can grab the charcers 
+    # without blocking things
+    newattr = termios.tcgetattr(self.fd)
+    newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+    termios.tcsetattr(self.fd, termios.TCSANOW, newattr)
+    fcntl.fcntl(self.fd, fcntl.F_SETFL, self.oldflags | os.O_NONBLOCK)
+    return self
+  
+  def __exit__(self, type, value, traceback):
+    '''Tear everything down'''
+    termios.tcsetattr(self.fd, termios.TCSAFLUSH, self.oldterm)
+    fcntl.fcntl(self.fd, fcntl.F_SETFL, self.oldflags)
+    return isinstance(value, TypeError)
+  
+  def getline(self):
+    '''Attempts to gather a line'''
+    while 1:
+      try: 
+        c = sys.stdin.read(10)
+        break
+      except IOError:
+        pass
+    return c
+    
