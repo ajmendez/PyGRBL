@@ -1,23 +1,24 @@
 #!/usr/bin/env python
-# command.py
-# Either runs a basic command screen or a full curses screen.
-#    python command.py -b         Basic gcode entry method
-#    python command.py -d         DEBUG with fake serial
-#    python command.py -w         Enable Watch
-# [2012.01.31] Mendez
+# command.py : A simple command prompt
+# [2012.08.02] - Mendez: cleaned up using my libraries
+# [2012.01.10] - SJK: original version
+import re, readline, time
+from lib import argv
+from lib.communicate import Communicate
 
-from grbl import Grbl
-from cmdscreen import CmdScreen
+# Initialize the args
+args = argv.arg(description='Simple python grbl command prompt for debuging the GRBL')
 
-if __name__ == "__main__":
-  G = Grbl()
-  if G.basic:
-    while True:
-      x = raw_input('cmd> ')
-      if x.strip() == 'quit' or x.strip() == 'exit':
-        G.quit()
-        break
-      else:
-        G.run(x)
-  else:
-    s = CmdScreen(G)
+# get a serial device and wake up the grbl, by sending it some enters
+with Communicate(args.device, args.speed, timeout=args.timeout,
+                 debug=args.debug,
+                 quiet=args.quiet) as serial:
+  
+  # now we send commands to the grbl, and wait waitTime for some response.
+  while True:
+    # Get some command
+    x = raw_input('grbl> ').strip()
+    if x in ['q','exit','quit']: break
+  
+    # run it if is not a quit switch
+    serial.run(x)
