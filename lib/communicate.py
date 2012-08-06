@@ -19,6 +19,7 @@ class Communicate():
     s.write("\r\n\r\n")
     if not debug: time.sleep(1)
     s.flushInput()
+    self.timeout = timeout
     self.s = s
     self.run('$')
   

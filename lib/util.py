@@ -63,7 +63,8 @@ def uniqify(seq, idfun=None):
 def getch():
   '''Get a character from the terminal.
   Accepts escape sequences and also returns them.
-  This kills the cpu, try getchar.'''
+  This kills the cpu, try getchar.
+  I found this off of stackoverflow'''
   fd = sys.stdin.fileno()
   
   # Enables some nice bits for the terminal so that we can grab the charcers 
@@ -89,8 +90,37 @@ def getch():
     fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
   return c
 
+
+import tty,select
 class Terminal():
+  def isData(self):
+    '''Is there data ready to process'''
+    return select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
+  
   def __enter__(self):
+    self.oldterm = termios.tcgetattr(sys.stdin)
+    
+    self.fd = sys.stdin.fileno()
+    self.oldflags = fcntl.fcntl(self.fd, fcntl.F_GETFL)
+    newattr = termios.tcgetattr(self.fd)
+    newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+    termios.tcsetattr(self.fd, termios.TCSANOW, newattr)
+    fcntl.fcntl(self.fd, fcntl.F_SETFL, self.oldflags | os.O_NONBLOCK)
+    
+    tty.setcbreak(sys.stdin.fileno())
+    return self
+  def __exit__(self, type, value, traceback):
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.oldterm)
+    fcntl.fcntl(self.fd, fcntl.F_SETFL, self.oldflags)
+    return isinstance(value, TypeError)
+  def getline(self):
+    if self.isData():
+      c = sys.stdin.read(3)
+      while self.isData(): sys.stdin.read(1)
+      return c
+    
+    
+  def __Xenter__(self, type, value, traceback):
     '''Build it up for a with'''
     self.fd = sys.stdin.fileno()
     self.oldterm = termios.tcgetattr(self.fd)
@@ -104,13 +134,13 @@ class Terminal():
     fcntl.fcntl(self.fd, fcntl.F_SETFL, self.oldflags | os.O_NONBLOCK)
     return self
   
-  def __exit__(self, type, value, traceback):
+  def __Xexit__(self, type, value, traceback):
     '''Tear everything down'''
     termios.tcsetattr(self.fd, termios.TCSAFLUSH, self.oldterm)
     fcntl.fcntl(self.fd, fcntl.F_SETFL, self.oldflags)
     return isinstance(value, TypeError)
   
-  def getline(self):
+  def Xgetline(self):
     '''Attempts to gather a line'''
     while 1:
       try: 

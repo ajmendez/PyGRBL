@@ -101,8 +101,9 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
 
   with Terminal() as terminal:
     while True:
-      print '<waiting for key>'
       c = terminal.getline()
+      if not c: continue
+      print '<waiting for key>'
       # if not c: time.sleep(0.25)
       if   c in   QUIT: sys.exit() # Quit the program
       elif c in UPDATE: moveLength = update()
