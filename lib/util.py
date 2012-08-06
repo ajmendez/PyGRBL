@@ -17,10 +17,9 @@ def error(message):
 def deltaTime(start):
   '''From a start datetime object get a nice string of 'x hours, y minutes, z seconds'
   of time passed since the start. '''
-  
   diff = datetime.now() - start
   # seconds = diff.seconds # limited to 1 second, so lets get fractions
-  seconds = diff.microseconds/float(10**6)
+  seconds = diff.days*86400 + diff.seconds + diff.microseconds/float(10**6)
   out = []
   epocs = [ [3600,'hour'],
             [60,'minute'],

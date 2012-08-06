@@ -40,15 +40,16 @@ location = dict(X=0.0, Y=0.0, Z=0.0) # store the current location inches
 
 # Some helper functions, scroll down for tasty bits
 def move(direction=''):
-  '''Figures out what to move'''
+  '''Ok to simplify the code below, I have this function which reads in the 
+  direction and which direction to go, and then it pushes some gcode to the grbl'''
   c = re.match(r'(?P<axis>X|Y|Z)(?P<dir>\+|\-)',direction, re.IGNORECASE)
   if not c: puts(colored.red('FAILED MOVE!!! check code: %s'%direction))
   
   sign = '' if c.group('dir')=='+' else '-'
   location[c.group('axis')] += float(sign+'1')*(moveLength)
   serial.run('G%02i %s%s%0.3f'%(0, # gcode cmd value using MOVE
-                                sign, #Not sure if gcode handles '+'/'-' so ''/'-'
                                 c.group('axis'), # X/Y/Z
+                                sign, #Not sure if gcode handles '+'/'-' so ''/'-'
                                 moveLength) )
   # Give the user some idea where we are.
   isAt = ', '.join(['%s=%.3f'%(a,location[a]) for a in location])
@@ -98,7 +99,9 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
   puts(colored.blue(HELP))
   for line in startCommand.splitlines():
     serial.run(line)
-
+  
+  # Not only do we need to talk to the serial device, we also need 
+  # some input from the user, so create a terminal object to do this.
   with Terminal() as terminal:
     while True:
       c = terminal.getline()

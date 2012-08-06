@@ -8,7 +8,8 @@ from glob import glob
 from util import error
 
 
-def arg(description=None, getDevice=True, defaultSpeed=9600, defaultTimeout=0.25,
+def arg(description=None, getDevice=True, 
+        defaultSpeed=9600, defaultTimeout=0.50,
         getFile=False, getMultiFiles=False):
   '''This is a simple arugment parsing function for all of the command line tools'''
   if not description:
@@ -18,7 +19,7 @@ def arg(description=None, getDevice=True, defaultSpeed=9600, defaultTimeout=0.25
   parser.add_argument('-q','--quiet',
                       action='store_true',
                       default=False,
-                      help='suppress output text')
+                      help='suppress output text -- Working in some scripts.')
   parser.add_argument('-d','--debug',
                       action='store_true',
                       default=False,
@@ -44,13 +45,13 @@ def arg(description=None, getDevice=True, defaultSpeed=9600, defaultTimeout=0.25
                         # action='store_true',
                         default=defaultTimeout,
                         type=float,
-                        help='Serial port timeout in seconds [%.2f]'%(defaultTimeout))
+                        help='Serial Port Timeout: Amount of time to wait before gathering data for display [%.2f]'%(defaultTimeout))
     
     parser.add_argument('device',
                         nargs='?',
                         # action='store_true',
                         default=False,
-                        help='GRBL serial dev. Generally this should be automatically found for you. You should specify this if it fails.')  
+                        help='GRBL serial dev. Generally this should be automatically found for you. You should specify this if it fails, or your have multiple boards attached.')  
 
 
   args = parser.parse_args()

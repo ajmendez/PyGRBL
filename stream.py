@@ -4,7 +4,7 @@
 
 import re, sys, time
 from datetime import datetime,timedelta
-from clint.textui import puts, colored, progress
+from lib.clint.textui import puts, colored, progress
 from lib import argv
 from lib.communicate import Communicate
 from lib.util import deltaTime
@@ -43,14 +43,13 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
     # if the serial is has text and we have not filled the buffer
     while sum(inBuf) >= RX_BUFFER_SIZE-1 | serial.inWaiting():
       tmp = serial.readline().strip()
-      if tmp.find('ok') < 0:
+      if tmp.find('ok') < 0 and tmp.find('error') < 0:
         puts(colored.red(' DEBUG: %s'%(tmp)+' '*20))
-        if tmp.find('error') > 0:
-          puts(colored.red('  !!! FAILURE'))
-          sys.exit(1)
-        # If we got here, probably debugging, CHECK!
-        out += 'DEBUG'
-        inBuf.pop(0)
+        # If we got here, probably debugging, check that gcode is not in return
+        # echo, and just move on.
+        if tmp.find('G00') or tmp.find('G01'):
+          out += 'DEBUG'
+          inBuf.pop(0)
       else:
         out += tmp
         inBuf.pop(0)
@@ -58,8 +57,8 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
       #  send the command
       serial.write(l)
       if not args.quiet:
-        puts(colored.blue('[%d][Sent: %s][Buf:%d]'%(i,l.strip(),sum(inBuf))) +
-             colored.green('[Rec:%s]'%(out))+' '*12)
+        puts(colored.blue('[%04d][Sent: %s][Buf:%3d]'%(i,l.strip().rjust(30),sum(inBuf))) +
+             colored.green(' Rec: %s'%(out))+' '*12)
 
   # It seems everything is ok, but dont reset everything untill buffer completes
   puts(

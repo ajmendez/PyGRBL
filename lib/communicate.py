@@ -9,7 +9,6 @@ from clint.textui import puts, colored
 
 class Communicate():
   def __init__(self, device, speed, debug=False, quiet=False, timeout=None):
-    if not timeout: timeout = 0.25
     # select the right serial device
     if debug: s = FakeSerial()
     else:     s = serial.Serial(device, speed, timeout=timeout)
@@ -17,23 +16,24 @@ class Communicate():
     if not quiet: print '''Initializing grbl at device: %s
   Please wait 1 second for device...'''%(device)
     s.write("\r\n\r\n")
-    if not debug: time.sleep(1)
+    if not debug: time.sleep(1.0)
     s.flushInput()
     self.timeout = timeout
     self.s = s
+    self.run(' ')
     self.run('$')
-  
+    
   def run(self, cmd):
     '''Extends either serial device with a nice run command that prints out the
     command and also gets what the device responds with.'''
     puts(colored.blue(' Sending: [%s]'%cmd ))
-    self.write(cmd)
+    self.write(cmd+'\n')
     out = ''
     time.sleep(self.timeout)
     # while s.inWaiting() > 0: out += s.read(10)
     while self.inWaiting() > 0: out += self.readline()
     if out != '':
-      puts(colored.green('  | '+ '\n'.join([o for o in out.splitlines()])))
+      puts(colored.green(''.join([' | '+o+'\n' for o in out.splitlines()])))
 
   def __enter__(self):
     return self
