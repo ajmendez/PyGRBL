@@ -2,10 +2,10 @@
 # align.py : Align the drill bit with the keyboard
 # [2012.08.03] Mendez written
 import readline, sys, re, time
-from lib.util import getch, Terminal
 from lib.clint.textui import colored, puts
 from lib import argv
 from lib.communicate import Communicate
+from lib.terminal import Terminal
 
 QUIT = ['q','Q']
 UPDATE =['u','U']
@@ -50,10 +50,12 @@ def move(direction=''):
   serial.run('G%02i %s%s%0.3f'%(0, # gcode cmd value using MOVE
                                 c.group('axis'), # X/Y/Z
                                 sign, #Not sure if gcode handles '+'/'-' so ''/'-'
-                                moveLength) )
+                                moveLength),
+             singleLine=True)
   # Give the user some idea where we are.
-  isAt = ', '.join(['%s=%.3f'%(a,location[a]) for a in location])
-  puts(colored.blue('    Currently at: %s'%isAt))
+  puts(colored.blue('(%s)'%', '.join(['%.3f'%location[k] for k in location])))
+  # isAt = ', '.join(['%s=%.3f'%(a,location[a]) for a in location])
+  # puts(colored.blue('    Currently at: %s'%isAt))
  
 def update():
   '''Update the moveLength for each command'''
@@ -102,22 +104,27 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
   
   # Not only do we need to talk to the serial device, we also need 
   # some input from the user, so create a terminal object to do this.
+  print '<waiting for key>'
   with Terminal() as terminal:
     while True:
-      c = terminal.getline()
-      if not c: continue
-      print '<waiting for key>'
+      # if not terminal.isData():
+      #   # time.sleep(0.25)
+      #   continue
+      c = terminal.getch()
+      # if not c: continue
+      print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
+      # print 'TYPED: %s'%repr(c)
       # if not c: time.sleep(0.25)
       if   c in   QUIT: sys.exit() # Quit the program
       elif c in UPDATE: moveLength = update()
       elif c in     UP: move('X-')
       elif c in   DOWN: move('X+')
       elif c in  RIGHT: move('Y-')
-      elif c in   LEFT: move('X+')
+      elif c in   LEFT: move('Y+')
       elif c in  RAISE: move('Z+')
       elif c in  LOWER: move('Z-')
       else : print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
-    
+      print '<waiting for key>'
     
 
 # ok now grab a character and decide what to do.

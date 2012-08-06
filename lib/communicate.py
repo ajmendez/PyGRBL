@@ -23,17 +23,21 @@ class Communicate():
     self.run(' ')
     self.run('$')
     
-  def run(self, cmd):
+  def run(self, cmd, singleLine=False):
     '''Extends either serial device with a nice run command that prints out the
     command and also gets what the device responds with.'''
-    puts(colored.blue(' Sending: [%s]'%cmd ))
+    puts(colored.blue(' Sending: [%s]'%cmd ), newline=(not singleLine))
     self.write(cmd+'\n')
     out = ''
     time.sleep(self.timeout)
     # while s.inWaiting() > 0: out += s.read(10)
     while self.inWaiting() > 0: out += self.readline()
     if out != '':
-      puts(colored.green(''.join([' | '+o+'\n' for o in out.splitlines()])))
+      if singleLine:
+        puts(colored.green('[%s]'%', '.join([o for o in out.splitlines()])),
+             newline=False)
+      else:
+        puts(colored.green(''.join([' | '+o+'\n' for o in out.splitlines()])))
 
   def __enter__(self):
     return self
