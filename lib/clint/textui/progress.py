@@ -11,10 +11,11 @@ This module provides the progressbar functionality.
 from __future__ import absolute_import
 
 import sys
+import time
 
 STREAM = sys.stderr
 
-BAR_TEMPLATE = '%s[%s%s] %i/%i\r'
+BAR_TEMPLATE = '%s[%s%s] %i/%i - %s\r'
 MILL_TEMPLATE = '%s %s %i/%i\r'  
 
 DOTS_CHAR = '.'
@@ -22,17 +23,33 @@ BAR_FILLED_CHAR = '#'
 BAR_EMPTY_CHAR = ' '
 MILL_CHARS = ['|', '/', '-', '\\']
 
-def bar(it, label='', width=32, hide=False, empty_char=BAR_EMPTY_CHAR, filled_char=BAR_FILLED_CHAR):
+#How long to wait before recalculating the ETA
+ETA_INTERVAL = 1
+#How many intervals (excluding the current one) to calculate the simple moving average
+ETA_SMA_WINDOW = 9
+
+def bar(it, label='', width=32, hide=False, empty_char=BAR_EMPTY_CHAR, filled_char=BAR_FILLED_CHAR, expected_size=None):
     """Progress iterator. Wrap your iterables with it."""
 
     def _show(_i):
+        if (time.time() - bar.etadelta) > ETA_INTERVAL:
+            bar.etadelta = time.time()
+            bar.ittimes = bar.ittimes[-ETA_SMA_WINDOW:]+[-(bar.start-time.time())/(_i+1)]
+            bar.eta = sum(bar.ittimes)/float(len(bar.ittimes)) * (count-_i)
+            bar.etadisp = time.strftime('%H:%M:%S', time.gmtime(bar.eta))
         x = int(width*_i/count)
         if not hide:
             STREAM.write(BAR_TEMPLATE % (
-                label, filled_char*x, empty_char*(width-x), _i, count))
+            label, filled_char*x, empty_char*(width-x), _i, count, bar.etadisp))
             STREAM.flush()
 
-    count = len(it)
+    count = len(it) if expected_size is None else expected_size
+
+    bar.start    = time.time()
+    bar.ittimes  = []
+    bar.eta      = 0
+    bar.etadelta = time.time()
+    bar.etadisp  = time.strftime('%H:%M:%S', time.gmtime(bar.eta))
 
     if count:
         _show(0)
@@ -68,7 +85,7 @@ def dots(it, label='', hide=False):
     STREAM.flush()
 
 
-def mill(it, label='', hide=False,): 
+def mill(it, label='', hide=False, expected_size=None):
     """Progress iterator. Prints a mill while iterating over the items."""
 
     def _mill_char(_i):
@@ -83,7 +100,7 @@ def mill(it, label='', hide=False,):
                 label, _mill_char(_i), _i, count))
             STREAM.flush()
 
-    count = len(it)
+    count = len(it) if expected_size is None else expected_size
 
     if count:
         _show(0)
