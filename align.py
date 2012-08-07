@@ -9,10 +9,10 @@ from lib.terminal import Terminal
 
 QUIT = ['q','Q']
 UPDATE =['u','U']
-UP = ['\x1b[A']
-DOWN = ['\x1b[B']
-RIGHT = ['\x1b[C']
-LEFT = ['\x1b[D']
+UP = ['\x1b[B']
+DOWN = ['\x1b[A']
+RIGHT = ['\x1b[D']
+LEFT = ['\x1b[C']
 RAISE = ['a','A']
 LOWER = ['z','Z']
 
