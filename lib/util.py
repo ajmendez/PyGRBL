@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # util.py : some nice things
 # [2012.07.30] - Mendez
-from clint.textui import colored, puts, indent
+import sys
 from datetime import datetime
 from math import sqrt
+from clint.textui import colored, puts, indent
 
 
 def error(message):

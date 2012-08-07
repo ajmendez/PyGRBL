@@ -91,7 +91,8 @@ Current Nudge length: %.3f inch [Default: 100mil].
 
 
 # Get the arguments passed into the program
-args = argv.arg(description='Simple python alignment tool')
+args = argv.arg(description='Simple python alignment tool',
+                defaultTimeout=0.1)
 
 # Using with logic to handle tear down and the sort.
 with Communicate(args.device, args.speed, timeout=args.timeout,
@@ -112,7 +113,7 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
       #   continue
       c = terminal.getch()
       # if not c: continue
-      print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
+      # print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
       # print 'TYPED: %s'%repr(c)
       # if not c: time.sleep(0.25)
       if   c in   QUIT: sys.exit() # Quit the program
@@ -123,7 +124,8 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
       elif c in   LEFT: move('Y+')
       elif c in  RAISE: move('Z+')
       elif c in  LOWER: move('Z-')
-      else : print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
+      else: pass
+      # else : print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
       print '<waiting for key>'
     
 

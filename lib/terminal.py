@@ -26,11 +26,11 @@ class Terminal():
     
     self.fd = sys.stdin.fileno()
     self.oldflags = fcntl.fcntl(self.fd, fcntl.F_GETFL)
-    newattr = termios.tcgetattr(self.fd)
-    newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+    # newattr = termios.tcgetattr(self.fd)
+    # newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
     # termios.tcsetattr(self.fd, termios.TCSANOW, newattr)
     # fcntl.fcntl(self.fd, fcntl.F_SETFL, self.oldflags | os.O_NONBLOCK)
-    tty.setcbreak(sys.stdin.fileno())
+    tty.setcbreak(self.fd)
     return self
   def __exit__(self, type, value, traceback):
     '''Return terminal to blocking'''
@@ -42,7 +42,9 @@ class Terminal():
     if c == '\x1b':
       c += sys.stdin.read(2)
       # flush any data that has accumulated.
-      termios.tcflush(self.fd, termios.TCIOFLUSH)
+      # termios.tcflush(self.fd, termios.TCIOFLUSH)
+      # flush just the input
+      termios.tcflush(self.fd, termios.TCIFLUSH)
       # old flush method
       # while self.isData(): x = sys.stdin.read(1) 
     return c
