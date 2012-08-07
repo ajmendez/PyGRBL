@@ -129,21 +129,3 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
       else: pass
       # else : print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
       print '<waiting for key>'
-    
-
-# ok now grab a character and decide what to do.
-# while 1:
-#   print '<waiting for key>'
-#   c = getch()
-#   # if not c: time.sleep(0.25)
-#   if   c in   QUIT: sys.exit() # Quit the program
-#   elif c in UPDATE: moveLength = update()
-#   elif c in     UP: move('X-')
-#   elif c in   DOWN: move('X+')
-#   elif c in  RIGHT: move('Y-')
-#   elif c in   LEFT: move('X+')
-#   elif c in  RAISE: move('Z+')
-#   elif c in  LOWER: move('Z-')
-#   else : print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
-
-serial.close()
