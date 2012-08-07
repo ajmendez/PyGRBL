@@ -40,8 +40,10 @@ location = dict(X=0.0, Y=0.0, Z=0.0) # store the current location inches
 
 # Some helper functions, scroll down for tasty bits
 def move(direction=''):
-  '''Ok to simplify the code below, I have this function which reads in the 
-  direction and which direction to go, and then it pushes some gcode to the grbl'''
+  '''To simplify the code below, 
+    I have this function which reads in the 
+    direction and which direction to go, and
+    then it pushes some gcode to the grbl'''
   c = re.match(r'(?P<axis>X|Y|Z)(?P<dir>\+|\-)',direction, re.IGNORECASE)
   if not c: puts(colored.red('FAILED MOVE!!! check code: %s'%direction))
   
