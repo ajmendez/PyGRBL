@@ -94,7 +94,7 @@ Current Nudge length: %.3f inch [Default: 100mil].
 
 # Get the arguments passed into the program
 args = argv.arg(description='Simple python alignment tool',
-                defaultTimeout=0.1)
+                defaultTimeout=0.25)
 
 # Using with logic to handle tear down and the sort.
 with Communicate(args.device, args.speed, timeout=args.timeout,
