@@ -17,6 +17,24 @@ class Terminal():
     '''Is there data ready to process'''
     return select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
   
+  def echo(self):
+    '''echo characters to screen'''
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.oldterm)
+    fcntl.fcntl(self.fd, fcntl.F_SETFL, self.oldflags)
+  
+  def noEcho(self):
+    '''No display echo'''
+    tty.setcbreak(self.fd)
+  
+  def wait(self):
+    '''do not accept new characters'''
+    termios.tcflow(self.fd,termios.TCIOFF)
+    
+  def accept(self):
+    '''accept new chars'''
+    termios.tcflush(self.fd, termios.TCIFLUSH)
+    termios.tcflow(self.fd,termios.TCION)
+  
   def __enter__(self):
     '''Set the sterminal to non blocking
     originally I was doing this with low level, but tty seems to be
@@ -26,18 +44,21 @@ class Terminal():
     
     self.fd = sys.stdin.fileno()
     self.oldflags = fcntl.fcntl(self.fd, fcntl.F_GETFL)
+    self.noEcho()
     # newattr = termios.tcgetattr(self.fd)
     # newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
     # termios.tcsetattr(self.fd, termios.TCSANOW, newattr)
     # fcntl.fcntl(self.fd, fcntl.F_SETFL, self.oldflags | os.O_NONBLOCK)
-    tty.setcbreak(self.fd)
+    # tty.setcbreak(self.fd)
     return self
   def __exit__(self, type, value, traceback):
     '''Return terminal to blocking'''
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.oldterm)
-    fcntl.fcntl(self.fd, fcntl.F_SETFL, self.oldflags)
+    self.echo()
+    # termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.oldterm)
+    # fcntl.fcntl(self.fd, fcntl.F_SETFL, self.oldflags)
     return isinstance(value, TypeError)
   def getch(self):
+    
     c = sys.stdin.read(1)
     if c == '\x1b':
       c += sys.stdin.read(2)
@@ -45,6 +66,7 @@ class Terminal():
       # termios.tcflush(self.fd, termios.TCIOFLUSH)
       # flush just the input
       termios.tcflush(self.fd, termios.TCIFLUSH)
+      
       # old flush method
       # while self.isData(): x = sys.stdin.read(1) 
     return c
