@@ -33,7 +33,7 @@ Arrow Keys : Move in X [Forward/Back]
 a/A / z/Z  : Move in Z [Raise/Lower]
 '''
 
-moveLength = 0.100 # Inches [0.100] : amount to move use update(), to change
+moveLength = 0.020 # Inches [0.020] : amount to move use update(), to change
 location = dict(X=0.0, Y=0.0, Z=0.0) # store the current location inches
 
 
@@ -67,7 +67,7 @@ def update():
   
   # tell the user what is going on.
   puts(colored.green('''\
-Current Nudge length: %.3f inch [Default: 100mil].  
+Current Nudge length: %.3f inch [Default: 20mil].  
   Example input: "0.020inch", "20mil", "30mm"
   Possible Units: %s'''%(moveLength, ', '.join(units)) ))
   
@@ -110,14 +110,7 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
   print '<waiting for key>'
   with Terminal() as terminal:
     while True:
-      # if not terminal.isData():
-      #   # time.sleep(0.25)
-      #   continue
       c = terminal.getch()
-      # if not c: continue
-      # print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
-      # print 'TYPED: %s'%repr(c)
-      # if not c: time.sleep(0.25)
       if   c in   QUIT: sys.exit() # Quit the program
       elif c in UPDATE: moveLength = update()
       elif c in     UP: move('X-')
