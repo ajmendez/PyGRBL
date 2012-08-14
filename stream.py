@@ -33,32 +33,33 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
   for i,line in enumerate(progress.bar(lines)):
     # Strip comments/spaces/new line, capitalize, and add line ending
     l = re.sub('\s|\(.*?\)','',line.strip()).upper()+'\n' 
-
+    
     # if this was a comment or blank line just go to the next one
     if len(l) == 0: continue
-  
+    
     inBuf.append(len(l))
     out = ''
-    nOk = 0
     # if the serial is has text and we have not filled the buffer
     while sum(inBuf) >= RX_BUFFER_SIZE-1 | serial.inWaiting():
       tmp = serial.readline().strip()
+      # puts(colored.green('\ni: %d l: %s\n'%(i,l)))
+      # puts(colored.green('temp: '+tmp+'\n'))
       if tmp.find('ok') < 0 and tmp.find('error') < 0:
         puts(colored.red(' DEBUG: %s'%(tmp)+' '*20))
         # If we got here, probably debugging, check that gcode is not in return
         # echo, and just move on.
-        if args.debug and 'G' in tmp:
+        if args.debug:
           out += 'DEBUG'
           inBuf.pop(0)
       else:
         out += tmp
         inBuf.pop(0)
     
-      #  send the command
-      serial.write(l)
-      if not args.quiet:
-        puts(colored.blue('[%04d][Sent: %s][Buf:%3d]'%(i,l.strip().rjust(30),sum(inBuf))) +
-             colored.green(' Rec: %s'%(out))+' '*12)
+    #  send the command
+    serial.write(l)
+    if not args.quiet:
+      puts(colored.blue('[%04d][Sent: %s][Buf:%3d]'%(i,l.strip().rjust(30),sum(inBuf))) +
+           colored.green(' Rec: %s'%(out))+' '*12)
 
   # It seems everything is ok, but dont reset everything untill buffer completes
   puts(
