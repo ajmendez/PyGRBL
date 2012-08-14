@@ -110,14 +110,7 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
   print '<waiting for key>'
   with Terminal() as terminal:
     while True:
-      # if not terminal.isData():
-      #   # time.sleep(0.25)
-      #   continue
       c = terminal.getch()
-      # if not c: continue
-      # print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
-      # print 'TYPED: %s'%repr(c)
-      # if not c: time.sleep(0.25)
       if   c in   QUIT: sys.exit() # Quit the program
       elif c in UPDATE: moveLength = update()
       elif c in     UP: move('X-')
