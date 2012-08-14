@@ -47,7 +47,7 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
         puts(colored.red(' DEBUG: %s'%(tmp)+' '*20))
         # If we got here, probably debugging, check that gcode is not in return
         # echo, and just move on.
-        if tmp.find('G00') or tmp.find('G01'):
+        if args.debug and 'G' in tmp:
           out += 'DEBUG'
           inBuf.pop(0)
       else:

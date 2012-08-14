@@ -21,7 +21,10 @@ class Communicate():
     self.timeout = timeout
     self.s = s
     self.run(' ')
-    self.run('$')
+    self.run('$ (Current Settings)')
+    self.run('G20 (Inches)')
+    self.run('G90 (Absolute)')
+    
     
   def run(self, cmd, singleLine=False):
     '''Extends either serial device with a nice run command that prints out the
@@ -43,6 +46,9 @@ class Communicate():
     return self
   
   def __exit__(self, type, value, traceback):
+    self.s.setDTR(False)
+    time.sleep(0.022)
+    self.s.setDTR(True)
     self.s.close()
     return isinstance(value, TypeError)
   
