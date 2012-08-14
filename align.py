@@ -72,11 +72,13 @@ Current Nudge length: %.3f inch [Default: 20mil].
   Possible Units: %s'''%(moveLength, ', '.join(units)) ))
   
   # get the input and clean
+  terminal.echo()
   userValue = raw_input('Update nudge length to: ')
+  terminal.noEcho()
   value = re.sub(r'\s','',userValue.strip()) # Remove Whitespace
   
   # match to units and values
-  c = re.match(r'(?P<num>\d?\.?\d)(?P<unit>'+'|'.join(units)+')', value, re.IGNORECASE)
+  c = re.match(r'(?P<num>\d+\.?\d+)(?P<unit>'+'|'.join(units)+')', value, re.IGNORECASE)
   
   # if the user was bad just go back
   if not c or not c.group('unit') in units:
@@ -110,15 +112,18 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
   print '<waiting for key>'
   with Terminal() as terminal:
     while True:
-      c = terminal.getch()
-      if   c in   QUIT: sys.exit() # Quit the program
-      elif c in UPDATE: moveLength = update()
-      elif c in     UP: move('X-')
-      elif c in   DOWN: move('X+')
-      elif c in  RIGHT: move('Y-')
-      elif c in   LEFT: move('Y+')
-      elif c in  RAISE: move('Z+')
-      elif c in  LOWER: move('Z-')
-      else: pass
-      # else : print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
-      print '<waiting for key>'
+      if terminal.isData():
+        c = terminal.getch()
+        terminal.wait()
+        if   c in   QUIT: sys.exit() # Quit the program
+        elif c in UPDATE: moveLength = update()
+        elif c in     UP: move('X-')
+        elif c in   DOWN: move('X+')
+        elif c in  RIGHT: move('Y-')
+        elif c in   LEFT: move('Y+')
+        elif c in  RAISE: move('Z+')
+        elif c in  LOWER: move('Z-')
+        else: pass
+        # else : print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
+        print '<waiting for key>'
+        terminal.accept()
