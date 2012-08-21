@@ -10,7 +10,8 @@ from util import error
 
 def arg(description=None, getDevice=True, 
         defaultSpeed=9600, defaultTimeout=0.50,
-        getFile=False, getMultiFiles=False):
+        getFile=False, getMultiFiles=False,
+        otherOptions=None):
   '''This is a simple arugment parsing function for all of the command line tools'''
   if not description:
     description='python grbl arguments'
@@ -52,7 +53,13 @@ def arg(description=None, getDevice=True,
                         # action='store_true',
                         default=False,
                         help='GRBL serial dev. Generally this should be automatically found for you. You should specify this if it fails, or your have multiple boards attached.')  
-
+  
+  # For any specalized options lets have a general import method
+  if otherOptions:
+    for item in otherOptions:
+      args = otherOptions[item].pop('args')
+      parser.add_argument(*args, **otherOptions[item])
+  
 
   args = parser.parse_args()
   

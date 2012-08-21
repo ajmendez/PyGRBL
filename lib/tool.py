@@ -84,8 +84,9 @@ class Tool(list):
   def __repr__(self):
     return '%s() : %i locations, units: %s'%(self.__class__.__name__, len(self),self.units)
   
-  def build(self,gcode):
-    '''Parse gCode listing to follow a bit location'''
+  def build(self, gcode, addIndex=False):
+    '''Parse gCode listing to follow a bit location
+    addindex [false] : adds the index to the last spot so that we can update and the push back'''
     puts(colored.blue('Building Toolpath:'))
     
     # for each line of the gcode, accumulate the location of a toolbit
@@ -96,11 +97,11 @@ class Tool(list):
         t = line['G']  # type of command
         for j,x in enumerate(AXIS): # grab all changes
           if x in line: move[j] = line[x]
-        
         # Apply changes to the object
         try:
           fcn = GCMD[t]
           fcn(self,move,t)
+          if addIndex and (t in [0,1]): self[-1].append(line['index'])
         except KeyError:
           error('Missing command in GCMD: %d'%(t))
   
@@ -213,7 +214,13 @@ class Tool(list):
                   ncommand=len(self),
                   footer='')
     return Template(TEMPLATE).substitute(params)
-
-
+  
+  
+  #### some commands to move / copy and otherwise change the gcode.
+  def move(self,loc):
+    '''Moves the toolpath from (0,0) to (loc[0],loc[1])'''
+    for item in self:
+      for i,x in enumerate(loc): 
+        item[i] += x
 
     

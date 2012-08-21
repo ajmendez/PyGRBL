@@ -59,3 +59,13 @@ def uniqify(seq, idfun=None):
    return result
 
 
+def convertUnits(x,unit):
+  '''Converts x into inches depending on unit'''
+  tmp =( ('mm',1.0/25.4),
+         ('inch',1.0),
+         ('in',1.0),
+         ('mil',1.0/1000.0) )
+  units, scales = zip(*tmp)
+  if not unit in units:
+    error('Failed to convert Unit[%s] with known unit conversion: %s'%(unit,','.join(units)))
+  return float(x)*scales[units.index(unit)]
