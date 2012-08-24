@@ -41,7 +41,6 @@ def relative(self,m=None,t=None):
   self.abs = False
 def move(self,m,t):
   '''Moves to location. if NaN, use previous. handles rel/abs'''
-  
   loc = convert(self,m) # ensure everything is in inches
   loc = [x if not math.isnan(x) else self[-1][i] for i,x in enumerate(loc)] # clean NAN
   if not self.abs: loc += self[-1][:] # rel/abs
@@ -56,10 +55,14 @@ def millMove(self, next, height):
   last = self[-1]
   move(self, last[0:2]+[height], 0) # lift off of board
   move(self, next[0:2]+[height], 0) # Move to next pos
-
+def circle(self,m,t):
+  self.move(m,t)
+  # FIXME
 
 GCMD = {0:  move,
         1:  move,
+        # 2:  circle,
+        # 3:  circle,
         4:  noop,
         20: inch,
         21: mm,
@@ -103,8 +106,19 @@ class Tool(list):
           fcn(self,move,t)
           if addIndex and (t in [0,1]): self[-1].append(line['index'])
         except KeyError:
-          error('Missing command in GCMD: %d'%(t))
+          error('Missing command in GCMD: %d(%s)'%(t, line))
   
+  def boundBox(self):
+    '''Returns the bounding box [[xmin,xmax],[ymin,ymax],[zmin,zmax]] for the toolpath'''
+    box = [[0.,0.],[0.,0.],[0.,0.]]
+    for item in self:
+      for i,ax in enumerate(AXIS):
+        if item[i] < box[i][0]: box[i][0] = item[i]
+        if item[i] > box[i][1]: box[i][1] = item[i]
+    return box
+
+
+
   def length(self):
     '''get the length of a toolpath'''
     length = 0.0

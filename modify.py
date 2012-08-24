@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# optimize.py : Optimizes a set of paths from a pcbGcode.
+# modify.py : A set of nice modifications for gcode
 # 2012.08.18 - Mendez
 import re, os
 from datetime import datetime
@@ -93,26 +93,36 @@ def mod(gfile):
   
   # Create a toolpath from the gcode
   # add in the index so that we can match it to the gcode
-  tool = Tool()
-  tool.build(gcode, addIndex=True)
   
+  
+  out = []
   if args.move:
     loc = parse(args.move, getUnits=True)[0] # only one move at a time.
     puts(colored.blue('Moving!\n    (0,0) -> (%.3f,%.3f)'%(loc[0],loc[1])))
+    tool = Tool()
+    tool.build(gcode, addIndex=True)
     tool.move(loc) # ok well this should work
     gcode.update(tool)
+    out.append([loc,gcode])
     
-  # if args.copy:
-  #   locs = parse(args.copy, getUnits=True)
-  #   puts(colored.blue('Copying!'))
-  #   for loc in locs:
-  #     puts(colored.blue('    (0,0) -> (%.3f,%.3f)'%(loc[0],loc[1])))
+  if args.copy:
+    locs = parse(args.copy, getUnits=True)
+    puts(colored.blue('Copying!'))
+    for loc in locs:
+      puts(colored.blue('    (0,0) -> (%.3f,%.3f)'%(loc[0],loc[1])))
+      gc = gcode.copy()
+      tool = Tool()
+      tool.build(gc, addIndex=True)
+      tool.move(loc)
+      gc.update(tool)
+      out.append([loc,gc])
+      
   # if args.replicate:
   #   nxy = map(int,parse(args.replicate)[0]) # ensure int, and only one
   #   puts(colored.blue('Replicating!\n     nx=%i, ny=%i)'%(nxy[0],nxy[1])))
   
+  output = ''.join([o.getGcode(tag=args.name,start=l) for l,o in out])
   
-  output = gcode.getGcode(tag=args.name)
   outfile = FILEENDING.join(os.path.splitext(gfile.name))
   puts(colored.green('Writing: %s'%outfile))
   with open(outfile,'w') as f:
@@ -142,7 +152,7 @@ args = argv.arg(description='Python GCode modifications',
 for gfile in args.gcode:
   # only process things not processed before.
   # c = re.match(r'(?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap)', gfile.name)
-  c = re.match(r'(.+)((?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap))', gfile.name)
+  c = re.match(r'(.+)(\.tap)', gfile.name)
   if c: # either a drill.tap or etch.tap file
     mod(gfile)
 

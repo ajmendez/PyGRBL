@@ -1,22 +1,42 @@
 #!/usr/bin/env python
 # gcode.py : Parses a gcode file
 # [2012.07.31] Mendez
-import re,sys
+import re, sys, os
+from copy import deepcopy
 from string import Template
 from pprint import pprint
 from clint.textui import colored, puts, indent, progress
 
-CMDS='GXYZMP'
+CMDS='GXYZMPIJ'
 
 TEMPLATE='''(UPDATED by ${tag})
+(Starting)
 ${init}
-${gcode}'''
+(Starting Location:)
+${startpos}
+
+${gcode}
+
+(Finished and Moving back to origin)
+${finish}
+(DONE)'''
+INIT='''\
+ G20
+ G90
+ G00 X0.000 Y0.000 Z0.000
+ G00 Z0.100'''
+FINISH = '''\
+ G00 Z0.100
+ G00 X0.000 Y0.000
+ G00 Z0.000'''
+
+
 
 class GCode(list):
   def __init__(self, gcode):
     '''start with a gcode ascii file'''
     if isinstance(gcode, str):
-      with open(gcode,'r') as f:
+      with open(os.path.expanduser(gcode),'r') as f:
         lines = f.readlines()
         filename = gcode
     else:
@@ -90,12 +110,12 @@ class GCode(list):
     for x in tool:
       # print len(x)
       if len(x) == 5:
-        print x
-        
+        # print x
         for u in UPDATE:
           if u.upper() in self[x[4]]:
             self[x[4]][u.upper()] = x[UPDATE.index(u)]
-        print self[x[4]]
+        # print self[x[4]]
+        
           # print self[x[4]], 
           # print u.upper(), 
           # print self[x[4]][u.upper()]
@@ -103,7 +123,10 @@ class GCode(list):
           # print self[x[4]][u],x[UPDATE.index(u)]
             
   
-  def getGcode(self,tag=__name__):
+  def copy(self):
+    return deepcopy(self)
+  
+  def getGcode(self, tag=__name__, start=None):
     lines = []
     for i,line in enumerate(self):
       l = ''
@@ -114,8 +137,10 @@ class GCode(list):
       if 'comment' in line: l += ' '.join(line['comment'])
       lines.append(l)
     params = dict(gcode='\n'.join(lines),
-                  init='G20\nG91\nG00 X0.000 Y0.000 Z0.000\n(Begin)', # ensure we init things correctly
+                  init=INIT,
+                  finish=FINISH,
                   tag=tag)
+    params['startpos'] = '  G00 X%.3f Y%.3f'%(start[0],start[1]) if start else ''
     return Template(TEMPLATE).substitute(params)
     
       
