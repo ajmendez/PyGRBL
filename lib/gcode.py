@@ -33,8 +33,9 @@ FINISH = '''\
 
 
 class GCode(list):
-  def __init__(self, gcode):
+  def __init__(self, gcode, limit=None):
     '''start with a gcode ascii file'''
+    self.limit = limit
     if isinstance(gcode, str):
       with open(os.path.expanduser(gcode),'r') as f:
         lines = f.readlines()
@@ -76,6 +77,7 @@ class GCode(list):
     command = r''.join([r'(?P<%s>%s(?P<%snum>-?\d+(?P<%sdecimal>\.?)\d*))?'%(c,c,c,c) for c in CMDS])
     output = []
     for i,line in enumerate(progress.bar(self.lines)):
+      if self.limit is not None and i > self.limit: break
     # for i,line in enumerate(self.lines):
       l = line.strip()
       # find comments, save them, and then remove them

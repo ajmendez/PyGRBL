@@ -109,13 +109,23 @@ class Tool(list):
           error('Missing command in GCMD: %d(%s)'%(t, line))
   
   def boundBox(self):
-    '''Returns the bounding box [[xmin,xmax],[ymin,ymax],[zmin,zmax]] for the toolpath'''
+    '''Returns the bounding box [[xmin,xmax],[ymin,ymax],[zmin,zmax]] 
+    for the toolpath'''
     box = [[0.,0.],[0.,0.],[0.,0.]]
     for item in self:
       for i,ax in enumerate(AXIS):
         if item[i] < box[i][0]: box[i][0] = item[i]
         if item[i] > box[i][1]: box[i][1] = item[i]
     return box
+  def _badclean(self):
+    loc=[0.0,0.0,0.0]
+    for item in self:
+      # if distance(item[0:3],loc) > 3:
+      if max(item) > 10:
+        print 'Removed: %s'%(str(item))
+        self.remove(item)
+      else:
+        loc = item
 
 
 
