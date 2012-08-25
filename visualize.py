@@ -12,12 +12,12 @@ from lib.util import distance
 # from lib.util import deltaTime
 # from lib.clint.textui import puts,colored
 
-# gfile = '~/Dropbox/Shared/robottown/pcb_design/doubleSided/Mendez.bot.etch.tap'
+gfile = '~/Dropbox/Shared/robottown/pcb_design/doubleSided/Mendez.bot.etch.tap'
 # gfile = '~/Downloads/Alexander.txt'
 # gfile = '~/Dropbox/Shared/robottown/pcb_design/encoderMotor/controller.bot.etch_opt.tap'
 # gfile = '~/Dropbox/Shared/robottown/pcb_design/encoderMotor/controller.bot.etch_alex_new.tap'
 # gfile = '~/Desktop/output2_0002.txt'
-gfile = '~/Desktop/output.etch_opt.tap'
+# gfile = '~/Desktop/output.etch_opt.tap'
 
 # with Image('test.ps') as image:
 
@@ -45,9 +45,11 @@ graphmargin = 0.5
 offset = [-(box[0][0]-graphmargin),-(box[1][0]-graphmargin)]
 width = ceil(box[0][1]-box[0][0]+2*graphmargin)+1
 height = ceil(box[1][1]-box[1][0]+2*graphmargin)+1
-with Image('~/tmp/test.ps', size=(width,height)) as image:
 
-	
+box=[[-2,3],[-1,3],[1,2]]
+
+with Image('~/tmp/test.ps', gridsize=box[0:2]) as image:
+
 
 	# for i,[x,y,z,t] in enumerate(tool):
 	# 	path.append([x+offset[0],y+offset[1]])
