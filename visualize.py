@@ -9,7 +9,7 @@ from lib.gcode import GCode
 from lib.tool import Tool
 from lib import argv
 from lib.util import deltaTime, distance, memorize
-from lib.clint.textui import puts,colored
+from lib.clint.textui import puts,colored, progress
 
 
 
@@ -41,20 +41,17 @@ def main(gfile):
 	start = datetime.now()
 	name = gfile if isinstance(gfile,str) else gfile.name
 	puts(colored.blue('Visualizing the file: %s\n Started: %s'%(name,datetime.now())))
-
 	tool, gcode = getGcode(gfile)
-
 	box = tool.boundBox()
-	# box = [[-2,3],[-1,3],[1,2]]
-	graphmargin = 0.5
-
-	
 	
 	# Build the file
-	with Image('~/tmp/test.ps', gridsize=box[0:2]) as image:
+	with Image('fig1.eps', gridsize=box[0:2]) as image:
 		last_t = 0 # starts with a move
 		path = []
-		for i,[x,y,z,t] in enumerate(tool):
+		puts(colored.blue('Drawing paths:'))
+		for i,[x,y,z,t] in enumerate(progress.bar(tool)):
+			# print 
+			# print i, x,y,z,t, len(tool)			
 			if t == last_t:
 				update_path(path, x,y,t)
 			else:
@@ -65,9 +62,9 @@ def main(gfile):
 					image.mill(xarr,yarr)
 				else:
 					image.move(xarr,yarr)
-			path = []
-			update_path(path, x,y,t) # there is a point in the stack, add it.
-			last_t = t
+				path = []
+				update_path(path, x,y,t) # there is a point in the stack, add it.
+				last_t = t
 
 	# how long did this take?
   	puts(colored.green('Time to completion: %s'%(deltaTime(start))))

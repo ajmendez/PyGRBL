@@ -56,14 +56,15 @@ def millMove(self, next, height):
   move(self, last[0:2]+[height], 0) # lift off of board
   move(self, next[0:2]+[height], 0) # Move to next pos
 def circle(self,m,t):
-  self.move(m,t)
+  move(self, m,t)
   # FIXME
 
 GCMD = {0:  move,
         1:  move,
-        # 2:  circle,
-        # 3:  circle,
+        2:  circle,
+        3:  circle,
         4:  noop,
+        17: noop, #xyplane 
         20: inch,
         21: mm,
         90: absolute,
