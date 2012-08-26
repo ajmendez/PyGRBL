@@ -41,3 +41,29 @@ def run():
     # c.fill(path.circle(2.5, 1.5, 0.5))
 
     # c.writeEPSfile("fig1.eps")
+
+from  lib.tool import IndexDict, origin
+def test():
+  x = origin()
+  print x
+  print x.allkeys()
+  for i in [1, 'x','X']:
+    print i,x[i]
+
+
+  # x = IndexDict()
+  #   print x
+  #   print x[0]
+  #   
+  #   x[0] = 0.1
+  #   print x
+  #   x['y'] = 0.2
+  #   x['Z'] = 0.3
+  #   # 
+  #   print x
+  
+
+
+if __name__ == '__main__':
+  test()
+  

@@ -10,7 +10,7 @@ from clint.textui import colored, puts, indent, progress
 from util import error, distance
 from mill import Mill
 
-AXIS='XYZ'
+AXIS='XYZIJ'
 
 TEMPLATE='''(Built with python and a dash of Mendez)
 (GCODE Start nCommands:${ncommand} npaths:${nmill})
@@ -24,13 +24,15 @@ ${footer}'''
 def nan():
   return [float('nan')]*3
 def origin():
-  return [0.0]*3
+  return IndexDict.setorigin()
+  # return [0.0]*3
 
 # Moves and the sort
 def noop(self,m=None,t=None):
   pass
 def home(self,m=None,t=None):
-  self.append(origin()+[0]) #origin
+  self.append(origin())
+  # self.append(origin()+[0]) #origin
 def inch(self,m=None,t=None):
   self.units = 'inch'
 def mm(self,m=None,t=None):
@@ -41,11 +43,19 @@ def relative(self,m=None,t=None):
   self.abs = False
 def move(self,m,t):
   '''Moves to location. if NaN, use previous. handles rel/abs'''
-  loc = convert(self,m) # ensure everything is in inches
-  loc = [x if not math.isnan(x) else self[-1][i] for i,x in enumerate(loc)] # clean NAN
-  if not self.abs: loc += self[-1][:] # rel/abs
-  loc.append(t)
-  self.append(loc)
+  
+  for i,key in enumerate(m):
+    if not math.isnan(m[key]):
+      m[key] = convert(self,m[key])
+    else:
+      m[key] = self[-1][key]
+  self.append(m)
+
+  # loc = convert(self,m) # ensure everything is in inches
+  # loc = [x if not math.isnan(x) else self[-1][i] for i,x in enumerate(loc.values())] # clean NAN
+  # if not self.abs: loc += self[-1][:] # rel/abs
+  # loc.append(t)
+  # self.append(loc)
 def convert(self,m):
   if self.units == 'mm':
     m = [x*25.4 for x in m]
@@ -67,8 +77,76 @@ GCMD = {0:  move,
         17: noop, #xyplane 
         20: inch,
         21: mm,
+        54: noop, # Word Coords
         90: absolute,
-        91: relative}
+        91: relative,
+        94:noop, #FeedRate/minute
+        }
+
+
+class IndexDict(dict):
+  ref = {0:'x',1:'y',2:'z'}
+  full = {3:'cmd',4:'index'}
+  full.update(ref)
+  def __init__(self,name='IndexDict', *args, **kwargs):
+    self.name = name
+    dict.__init__(self, *args, **kwargs)
+
+  def __getitem__(self,key):
+    '''automatically return x,y,z for 0,1,2'''
+    if isinstance(key,int) and key in self.full and self.full[key] in self.allkeys():
+      return dict.get(self,self.full[key])
+      # return self[self.full[key]]
+    elif isinstance(key, str) and key.lower() in self.allkeys():
+      return dict.get(self,key.lower())
+    else:
+      return float('nan')
+  def __setitem__(self,key,value):
+    if isinstance(key,int) and key in self.full:
+      # self[self.full[key]] = value
+      dict.__setitem__(self,self.full[key].lower(),value)
+    else:
+      # self.set(key,value)
+      dict.__setitem__(self,key.lower(),value)
+
+
+
+  def __repr__(self):
+    # print self.allkeys()
+    # print dict.get(self, 'z')
+    # print 'repr',self[2]
+
+    return '%s:(% .3f, % .3f, % .3f)'%(self.name, self[0],self[1],self[2])
+  
+  def __iter__(self):
+    self._current = 0
+    return self
+  def next(self):
+    if self._current > len(self.ref.keys())-1:
+      raise StopIteration
+    else:
+      self._current += 1
+      return self.ref[self._current - 1]
+
+  def allkeys(self):
+    return dict.keys(self)
+  def allvalues(self):
+    return dict.values(self)
+
+  def keys(self):
+    return sorted([self.ref[k] for k in self.ref])
+  def __hash__(self):
+    return hash(self.keys())
+
+  @classmethod
+  def setorigin(s):
+    self = IndexDict(name=' origin')
+    for key in self.ref:
+      self[self.ref[key]] = 0.0
+    return self
+
+
+
 
 
 
@@ -86,7 +164,30 @@ class Tool(list):
   def __repr__(self):
     return '%s() : %i locations, units: %s'%(self.__class__.__name__, len(self),self.units)
 
-  def build(self, gcode, addIndex=False):
+  def build(self, gcode):
+    '''New gCode that uses the indexedDict'''
+    puts(colored.blue('Building Toolpath:'))
+    for i,line in enumerate(progress.bar(gcode)):
+    # for i,line in enumerate(gcode):
+      if 'G' in line: # only handle the gcodes
+        cmd = line['G']
+        move = IndexDict(name='move')
+        for j,x in enumerate(AXIS):
+          if x in line: move[x] = line[x]
+        move['cmd'] = cmd
+        move['index'] = line['index']
+        # print self[-1],
+        # print line, 
+        # print move
+        try:
+          fcn = GCMD[cmd]
+          move.name = 'cmd[%02i]'%cmd
+          fcn(self, move, cmd)
+        except KeyError:
+          raise
+          error('Missing command in GCMD: %d(%s)'%(cmd, line))
+
+  def _old_build(self, gcode, addIndex=False):
     '''Parse gCode listing to follow a bit location
     addindex [false] : adds the index to the last spot so that we can update and the push back'''
     puts(colored.blue('Building Toolpath:'))
@@ -94,6 +195,7 @@ class Tool(list):
     # for each line of the gcode, accumulate the location of a toolbit
     for i,line in enumerate(progress.bar(gcode)):
     # for i,line in enumerate(gcode):
+
       move = nan()
       if 'G' in line:
         t = line['G']  # type of command
@@ -111,17 +213,21 @@ class Tool(list):
     '''Returns the bounding box [[xmin,xmax],[ymin,ymax],[zmin,zmax]] 
     for the toolpath'''
     box = [[0.,0.],[0.,0.],[0.,0.]]
-    for item in self:
-      for i,ax in enumerate(AXIS):
-        if item[i] < box[i][0]: box[i][0] = item[i]
-        if item[i] > box[i][1]: box[i][1] = item[i]
+    for j,item in enumerate(self):
+      # print 'bb', item
+      for i,ax in enumerate(item):
+        # print i,ax
+        # if ax[i] < box[i][0]: box[i][0] = ax[i]
+        # if ax[i] > box[i][1]: box[i][1] = ax[i]
+        if j == 2 : sys.exit()
     return box
+
   def _badclean(self):
     loc=[0.0,0.0,0.0]
     for item in self:
       # if distance(item[0:3],loc) > 3:
       if max(item) > 10:
-        print 'Removed: %s'%(str(item))
+        print 'xxx Removed: %s'%(str(item))
         self.remove(item)
       else:
         loc = item

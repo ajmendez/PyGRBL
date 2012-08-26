@@ -32,8 +32,8 @@ def getGcode(gfile):
 	
 	# parse the code into an array of tool moves
 	tool = Tool(gcode)
-	tool.uniq()
-	tool._badclean()  # found a bug in a file HAX
+	# tool.uniq()
+	# tool._badclean()  # found a bug in a file HAX
 	return (tool, gcode)
 
 
@@ -42,8 +42,8 @@ def main(gfile):
 	name = gfile if isinstance(gfile,str) else gfile.name
 	puts(colored.blue('Visualizing the file: %s\n Started: %s'%(name,datetime.now())))
 	tool, gcode = getGcode(gfile)
-	box = tool.boundBox()
-	
+	# box = tool.boundBox()
+	sys.exit()
 	# Build the file
 	with Image('fig1.eps', gridsize=box[0:2]) as image:
 		last_t = 0 # starts with a move
@@ -56,8 +56,13 @@ def main(gfile):
 				update_path(path, x,y,t)
 			else:
 				xarr,yarr = zip(*path)
+				print
+				print i
+				print xarr, yarr
 				if len(path) == 1:
 					image.drill(xarr[0],yarr[0])
+				elif t == 2:
+					image.circle(xarr,yarr)
 				elif t == 1:
 					image.mill(xarr,yarr)
 				else:
