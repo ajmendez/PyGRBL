@@ -72,7 +72,7 @@ GCMD = {0:  move,
 
 
 class Tool(list):
-  def __init__(self,gcode=None):
+  def __init__(self, gcode=None):
     ''' By default the machine starts in absolute with "mm" as the units.
     Go to the home location and then add moves'''
     self.abs = True
@@ -80,13 +80,11 @@ class Tool(list):
     self.mills = []
     home(self)
     
-    if gcode:
-      self.build(gcode)
-  
-  
+    if gcode: self.build(gcode)
+    
   def __repr__(self):
     return '%s() : %i locations, units: %s'%(self.__class__.__name__, len(self),self.units)
-  
+
   def build(self, gcode, addIndex=False):
     '''Parse gCode listing to follow a bit location
     addindex [false] : adds the index to the last spot so that we can update and the push back'''

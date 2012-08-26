@@ -69,3 +69,17 @@ def convertUnits(x,unit):
   if not unit in units:
     error('Failed to convert Unit[%s] with known unit conversion: %s'%(unit,','.join(units)))
   return float(x)*scales[units.index(unit)]
+
+
+def memorize(function):
+  ''' A simple cache'''
+  memo = {}
+  def wrapper(*args):
+    if args in memo:
+      print "returning %s from cache" % memo[args]
+      return memo[args]
+    else:
+      rv = function(*args)
+      memo[args] = rv
+      return rv
+  return wrapper
