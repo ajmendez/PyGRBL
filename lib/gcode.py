@@ -46,7 +46,7 @@ class GCode(list):
       gcode.close()
     self.filename = filename
     self.lines = lines
-    self.ready = False
+    # self.ready = False
   
   # def append(self,item):
   #   '''add the next nice to the object'''
@@ -58,9 +58,12 @@ class GCode(list):
     if you need everything use .parseall()'''
     everything = self._parse()
     for item in everything:
-      for cmd in CMDS:
-        if cmd in item:
-          self.append(item)
+      toappend = False
+      for cmd in CMDS: 
+        if cmd in item: 
+          toappend=True
+      if toappend: 
+        self.append(item)
   
   def parseAll(self):
     '''Gets everything so that we can print it back out'''
