@@ -49,6 +49,9 @@ def test():
   print x.allkeys()
   for i in [1, 'x','X']:
     print i,x[i]
+  
+  print x.x, x.y, x.z
+
 
 
   # x = IndexDict()

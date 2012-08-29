@@ -7,7 +7,7 @@ from string import Template
 from copy import deepcopy
 
 from clint.textui import colored, puts, indent, progress
-from util import error, distance
+from util import error, distance, IndexDict
 from mill import Mill
 
 AXIS='XYZIJ'
@@ -22,6 +22,7 @@ ${footer}'''
 
 
 def nan():
+  ''' only used for _old_build'''
   return [float('nan')]*3
 def origin():
   return IndexDict.setorigin()
@@ -84,72 +85,6 @@ GCMD = {0:  move,
         }
 
 
-class IndexDict(dict):
-  ref = {0:'x',1:'y',2:'z'}
-  full = {3:'cmd',4:'index'}
-  full.update(ref)
-  def __init__(self,name='IndexDict', *args, **kwargs):
-    self.name = name
-    dict.__init__(self, *args, **kwargs)
-
-  def __getitem__(self,key):
-    '''automatically return x,y,z for 0,1,2'''
-    if isinstance(key,int) and key in self.full and self.full[key] in self.allkeys():
-      return dict.get(self,self.full[key])
-      # return self[self.full[key]]
-    elif isinstance(key, str) and key.lower() in self.allkeys():
-      return dict.get(self,key.lower())
-    else:
-      return float('nan')
-  def __setitem__(self,key,value):
-    if isinstance(key,int) and key in self.full:
-      # self[self.full[key]] = value
-      dict.__setitem__(self,self.full[key].lower(),value)
-    else:
-      # self.set(key,value)
-      dict.__setitem__(self,key.lower(),value)
-
-
-
-  def __repr__(self):
-    # print self.allkeys()
-    # print dict.get(self, 'z')
-    # print 'repr',self[2]
-
-    return '%s:(% .3f, % .3f, % .3f)'%(self.name, self[0],self[1],self[2])
-  
-  def __iter__(self):
-    self._current = 0
-    return self
-  def next(self):
-    if self._current > len(self.ref.keys())-1:
-      raise StopIteration
-    else:
-      self._current += 1
-      return self.ref[self._current - 1]
-
-  def allkeys(self):
-    return dict.keys(self)
-  def allvalues(self):
-    return dict.values(self)
-
-  def keys(self):
-    return sorted([self.ref[k] for k in self.ref])
-  def __hash__(self):
-    return hash(self.keys())
-
-  @classmethod
-  def setorigin(s):
-    self = IndexDict(name=' origin')
-    for key in self.ref:
-      self[self.ref[key]] = 0.0
-    return self
-
-
-
-
-
-
 class Tool(list):
   def __init__(self, gcode=None):
     ''' By default the machine starts in absolute with "mm" as the units.
@@ -181,7 +116,7 @@ class Tool(list):
         # print move
         try:
           fcn = GCMD[cmd]
-          move.name = 'cmd[%02i]'%cmd
+          move.name = 'cmd[% 2i]'%cmd
           fcn(self, move, cmd)
         except KeyError:
           raise
@@ -213,13 +148,12 @@ class Tool(list):
     '''Returns the bounding box [[xmin,xmax],[ymin,ymax],[zmin,zmax]] 
     for the toolpath'''
     box = [[0.,0.],[0.,0.],[0.,0.]]
-    for j,item in enumerate(self):
-      # print 'bb', item
+    for item in self:
       for i,ax in enumerate(item):
         # print i,ax
-        # if ax[i] < box[i][0]: box[i][0] = ax[i]
-        # if ax[i] > box[i][1]: box[i][1] = ax[i]
-        if j == 2 : sys.exit()
+        if item[ax] < box[i][0]: box[i][0] = item[ax]
+        if item[ax] > box[i][1]: box[i][1] = item[ax]
+        # if j == 2 : sys.exit()
     return box
 
   def _badclean(self):

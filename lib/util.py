@@ -83,3 +83,80 @@ def memorize(function):
       memo[args] = rv
       return rv
   return wrapper
+
+
+
+
+class IndexDict(dict):
+  ref = {0:'x',1:'y',2:'z'}
+  full = {3:'cmd',4:'index'}
+  full.update(ref)
+  def __init__(self,name='IndexDict', *args, **kwargs):
+    self.name = name
+    dict.__init__(self, *args, **kwargs)
+
+  def __getitem__(self,key):
+    '''automatically return x,y,z for 0,1,2'''
+    if isinstance(key,int) and key in self.full and self.full[key] in self.allkeys():
+      return dict.get(self,self.full[key])
+    elif isinstance(key, str) and key.lower() in self.allkeys():
+      return dict.get(self,key.lower())
+    else:
+      return float('nan')
+
+  def __setitem__(self,key,value):
+    ''' automatically set all values of ref'''
+    if isinstance(key,int) and key in self.full:
+      dict.__setitem__(self,self.full[key].lower(),value)
+    else:
+      dict.__setitem__(self,key.lower(),value)
+
+  def __getattr__(self,name):
+    ''' relate .x to ['x'] '''
+    if name in self.allkeys():
+      return self[name]
+    else:
+      return dict.get(self,name)
+
+  def __setattr__(self, name, value):
+    if name in self.allkeys():
+      self[name] = value
+    else:
+      dict.__setitem__(self,name,value)
+
+
+  def __repr__(self):
+    return '%s:(% .3f, % .3f, % .3f)'%(self.name, self[0],self[1],self[2])
+  
+  # for x in tool:
+  # this should give the x,y,z axis labels like a dictionary
+  def __iter__(self):
+    self._current = 0
+    return self
+  def next(self):
+    if self._current > len(self.ref.keys())-1:
+      raise StopIteration
+    else:
+      self._current += 1
+      return self.ref[self._current - 1]
+
+  # sometimes we want everything
+  def allkeys(self):
+    return dict.keys(self)
+  def allvalues(self):
+    return dict.values(self)
+
+  # give this item a hash property so that we can do ItemDict[0:2]
+  def keys(self):
+    return sorted([self.ref[k] for k in self.ref])
+  def __hash__(self):
+    return hash(self.keys())
+
+  # start at (0,0,0) rater than nans
+  @classmethod
+  def setorigin(s):
+    self = IndexDict(name=' origin')
+    self.cmd = 0
+    for key in self.ref:
+      self[self.ref[key]] = 0.0
+    return self

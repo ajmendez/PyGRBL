@@ -8,68 +8,30 @@ from lib.image import Image
 from lib.gcode import GCode
 from lib.tool import Tool
 from lib import argv
-from lib.util import deltaTime, distance, memorize
-from lib.clint.textui import puts,colored, progress
+from lib.util import deltaTime
+from lib.clint.textui import puts, colored
 
-
-
-
-def update_path(path, x,y,t):
-	tmp = [x,y]#[x+offset[0],y+offset[1]]
-	if ( (len(path) < 1) or                   # Nothing in path
-         ( tmp != path[-1] and                # check that it is uniq 
-           ( distance(tmp,path[-1]) < 2 or   # clean out crazy jump
-             t != 1 )                      #  but only for mi
-          )
-        ):
-		path.append(tmp)
-
-# @memorize
-def getGcode(gfile):
-	# parse the gcode into cmds and values
-  	gcode = GCode(gfile, limit=None)
-	gcode.parse()
-	
-	# parse the code into an array of tool moves
-	tool = Tool(gcode)
-	# tool.uniq()
-	# tool._badclean()  # found a bug in a file HAX
-	return (tool, gcode)
 
 
 def main(gfile):
 	start = datetime.now()
 	name = gfile if isinstance(gfile,str) else gfile.name
 	puts(colored.blue('Visualizing the file: %s\n Started: %s'%(name,datetime.now())))
-	tool, gcode = getGcode(gfile)
-	# box = tool.boundBox()
-	sys.exit()
-	# Build the file
+
+	# Read in the gcode
+	gcode = GCode(gfile, limit=None)
+	gcode.parse()
+	
+	# parse the code into an array of tool moves
+	tool = Tool(gcode)
+	tool.uniq()
+	box = tool.boundBox()
+
+	print 'length gcode: %d, length tool: %d'%(len(gcode),len(tool))
+
+	# plot it out
 	with Image('fig1.eps', gridsize=box[0:2]) as image:
-		last_t = 0 # starts with a move
-		path = []
-		puts(colored.blue('Drawing paths:'))
-		for i,[x,y,z,t] in enumerate(progress.bar(tool)):
-			# print 
-			# print i, x,y,z,t, len(tool)			
-			if t == last_t:
-				update_path(path, x,y,t)
-			else:
-				xarr,yarr = zip(*path)
-				print
-				print i
-				print xarr, yarr
-				if len(path) == 1:
-					image.drill(xarr[0],yarr[0])
-				elif t == 2:
-					image.circle(xarr,yarr)
-				elif t == 1:
-					image.mill(xarr,yarr)
-				else:
-					image.move(xarr,yarr)
-				path = []
-				update_path(path, x,y,t) # there is a point in the stack, add it.
-				last_t = t
+		image.process(tool)
 
 	# how long did this take?
   	puts(colored.green('Time to completion: %s'%(deltaTime(start))))

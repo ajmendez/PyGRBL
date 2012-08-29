@@ -48,10 +48,10 @@ class GCode(list):
     self.lines = lines
     self.ready = False
   
-  def append(self,item):
-    '''add the next nice to the object'''
-    if self.ready : self.ready = False
-    super(GCode, self).append(item)
+  # def append(self,item):
+  #   '''add the next nice to the object'''
+  #   if self.ready : self.ready = False
+  #   super(GCode, self).append(item)
   
   def parse(self):
     '''By default .parse() grabs only the G## commands for creating toolpaths in some space
