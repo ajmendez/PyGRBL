@@ -51,12 +51,12 @@ def opt(gfile):
     # mill = tool.mills.pop(0)
 
     # Basic optimization, find the next closest one and use it.
-    # mill = tool.getNextMill(here)
+    mill = tool.getNextMill(here)
 
     # Advanced Optimization:  Assumes that each mill path closed, so finds 
     #  the mill path which is close to the point and reorders it to be so
-    mill = tool.getClosestMill(here)
-
+    # mill = tool.getClosestMill(here)
+    
     # you were here, now you are there
     # move mills and update location
     newMills.append(mill) 

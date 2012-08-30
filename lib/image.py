@@ -10,20 +10,25 @@ from lib.util import deltaTime, error
 from numpy import arange, floor, ceil
 from pyx import *
 
+unit.set(defaultunit="inch")
+text.set(mode="latex")
+text.preamble(r"\usepackage[scaled]{helvet}\renewcommand{\rmdefault}{phv}\renewcommand{\sfdefault}{phv}")
+
+
 
 def update_path(path, x,y,t):
   '''update function to simplify below'''
   tmp = [x,y]
   # make sure that we only add new points / or if path is empty
   if len(path) < 1 or tmp != path[-1] : path.append(tmp)
-  return path
+  return t, path
 
 
 class Image(object):
   def __init__(self, filename=None, 
                gridscale=1.0,
                gridsize=[[0.0,1.0],[0.0,1.0]],
-               pagesize=(5,4),  # width,height [in]
+               pagesize=(7.5,4),  # width,height [in]
                embiggen=0.10, # percent to add to size
                pagemargin=(0.5,0.5,0.5,0.5)):
     ''' Image Canvas with milling functions. 
@@ -36,25 +41,51 @@ class Image(object):
     delta = [[floor(x[0]), 
               ceil(x[1]), 
               abs(ceil(x[1]) - floor(x[0]))] for x in gridsize]
+    delta = [[x[0], 
+              x[1], 
+              abs(x[1] - x[0])] for x in gridsize]
+
     grid = [[d[0] - embiggen*d[2],
              d[1] + embiggen*d[2]] for d in delta]
 
     self.gridsize = gridsize
     self.pagesize = pagesize
-    unit.set(defaultunit="inch")
+
+
+    
+    # class axis(graph.axis.linear):
+    #   def __init__(self, divisor=4, texter=graph.axis.texter.rational**kwargs)):
+    #     axis.linear.__init__(self, divisor=divisor, texter=texter, **kwargs)
+
+    ticks = ['1','1/2','1/4','1/8', '1/16']
+    gridcolors = [color.cmyk.Grey,None,None,None,None]
+    ticklen = [0.15, 0.1, 0.05, 0.025,0.02]
+    parter = parter=graph.axis.parter.linear(ticks, labeldists=[1])
+    painter = graph.axis.painter.regular(gridattrs=[attr.changelist(gridcolors)],
+                                         # outerticklength=attr.changelist(ticklen), 
+                                         innerticklength=attr.changelist(ticklen) )
+    self.c = canvas.canvas()
     self.g = graph.graphxy(width=pagesize[0], 
-                           height=pagesize[1],
+                           # ratio=delta[1][2]/delta[0][2],
+                           ratio=delta[0][2]/delta[1][2],
+                           # margin=0.5*unit.w_inch,
+                           # height=pagesize[1],
                            # xaxisat=0,yaxisat=0, 
                       x=graph.axis.linear(min=grid[0][0], 
                                           max=grid[0][1],
+                                          painter=painter, parter=parter,
                                           title='X [inch]'),
                       y=graph.axis.linear(min=grid[1][0], 
                                           max=grid[1][1],
+                                          painter=painter, parter=parter,
                                           title='Y [inch]'))
+    self.c.insert(self.g)
 
-    # Grid lines
+    # Adds Origin in red
     for i, d in enumerate(delta):
-      for x in range(int(d[0]),int(d[1])+1):
+      for x in range(0,1):
+      # for x in range(int(d[0]),int(d[1])+1):
+
         c = color.cmyk.Red if x == 0 else color.cmyk.Gray
         w = style.linewidth.THIck if x == 0 else style.linewidth.THIN
         self.g.plot(graph.data.points(zip([x,x],grid[1-i][0:2]), x=i+1, y=2-i),
@@ -68,6 +99,16 @@ class Image(object):
                                    style.linewidth.THICK,
                                    style.linejoin.miter])])
 
+    x = gridsize[0][0] if gridsize[0][0] < 0 else gridsize[0][1]
+    y = gridsize[1][1] if gridsize[1][1] > 0 else gridsize[1][0]
+    gx,gy = self.g.vpos(0.01,0.99)
+    t = self.c.text(gx,gy, 'Bound[in]: (%0.1f,%0.1f)'%(x,y),[text.halign.boxleft, text.valign.top])
+    tpath = t.bbox().enlarged(3*unit.x_pt).path()
+    self.c.draw(tpath, [color.cmyk.White, deco.filled([color.cmyk.White])])
+    self.c.insert(t)
+
+    # center = t.marker("id")
+    # self.g.stroke(path.circle(center[0], center[1], 0.125), [color.rgb.red])
 
 
   def __enter__(self):
@@ -83,9 +124,9 @@ class Image(object):
     fname = filename if self.filename is None else self.filename
     puts(colored.blue('Writing : %s'%fname)) 
     if '.pdf' in fname:
-      self.g.writePDFfile(fname)
+      self.c.writePDFfile(fname)
     else:
-      self.g.writeEPSfile(fname)
+      self.c.writeEPSfile(fname)
 
 
 
@@ -105,32 +146,30 @@ class Image(object):
 
     last_cmd = 0
     path = [] # currently working things
-    mil = []
-    mov = []
-    dri = []
-    arc = []
-    for i,t in enumerate(progress.bar(tool)):
-    # for i,t in enumerate(tool):
+    mil,mov,dri,arc = [],[],[],[]
+
+    # for i,t in enumerate(progress.bar(tool)):
+    for i,t in enumerate(tool):
       x,y,cmd = t.x,t.y,t['cmd']
+
       if cmd == last_cmd:
-        path = update_path(path, x,y,cmd)
-      elif cmd in (0,1,2):
-        # ok so toolpath switched directive, so plot and then start next path
-        # xarr,yarr = zip(*path) 
-        # print "Last:%d, this:%d, length: %d"%(last_cmd, cmd, len(path))
-        # a drill command is just a mill without moving around.
-        if   last_cmd == 1 and len(path) < 3 : dri.extend(path)
-        elif last_cmd == 0                   : mov.extend(path)
-        elif last_cmd == 1                   : mil.extend(path)
-        elif last_cmd == 2                   : arc.extend(path)
+        # If we are still doing the same op as last time, append to path
+        last_cmd, path = update_path(path, x,y,cmd)
+
+      if cmd != last_cmd or i == len(tool)-1:
+        # if we are doing something different or we are done:
+        path.append([None,None]) # add a null to the end of the path
+        # drill is one move plus a null
+        if   last_cmd == 1 and len(path) == 2 : dri.extend(path)
+        elif last_cmd == 0                    : mov.extend(path)
+        elif last_cmd == 1                    : mil.extend(path)
+        elif last_cmd == 2                    : arc.extend(path)
+
         # ok done with plotting, now get ready for next path
         # dont forget about getting the current point before changing to next
-        path = update_path([], x,y,cmd) # start with nothing
-        last_cmd = cmd
-      else:
-        print 'Please add cmd=[%d] to image.py'%(cmd)
+        last_cmd, path = update_path([], x,y,cmd) # start with nothing
 
-    # print 'Move: %d, Mill: %d, Arc: %d, Drill: %d'%(len(mov),len(mil),len(arc),len(dri))
+    # Ok plot everything, lines will not be connected between nulls
     if len(mil) > 0 : self.mill(zip(*mil)[0], zip(*mil)[1])
     if len(arc) > 0 : self.arc(zip(*arc)[0], zip(*arc)[1])
     if len(mov) > 0 : self.move(zip(*mov)[0], zip(*mov)[1])
@@ -154,11 +193,12 @@ class Image(object):
             [graph.style.line([w, color])])
 
   def move(self,xarr,yarr, 
-            color=color.cmyk.Gray,
+            color=color.gray(0.6),
             width=style.linewidth.thin):
     '''Moves the bit around (x,y) defaults to light blue and 1 point ('onepoint'),
     can pass a inch float as well.  '''
     w = self._convertwidth(width)
+    
     self.g.plot(graph.data.points(zip(xarr, yarr), x=1, y=2),
             [graph.style.line([w, color])])
 

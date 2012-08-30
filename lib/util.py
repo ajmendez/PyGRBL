@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 from math import sqrt
 from clint.textui import colored, puts, indent
-
+from copy import deepcopy
 
 def error(message):
   '''Nice little error message for the user that causes a quit'''
@@ -38,8 +38,11 @@ def deltaTime(start):
 
 
 def distance(A,B):
-  '''euclidean distance of two lists. TODO should be generalized...'''
-  return sqrt(sum([pow(alpha-beta,2) for alpha,beta in zip(A,B)]))
+  '''euclidean distance of two lists. TODO should be generalized...
+  IndexDict returns the 'x','y','z' strings for each of the axes so do it slighly diff'''
+  a = A.values() if isinstance(A,IndexDict) else A
+  b = B.values() if isinstance(B,IndexDict) else B
+  return sqrt(sum([pow(alpha-beta,2) for alpha,beta in zip(a,b)]))
 
 
 def uniqify(seq, idfun=None): 
@@ -92,13 +95,18 @@ class IndexDict(dict):
   full = {3:'cmd',4:'index'}
   full.update(ref)
   def __init__(self,name='IndexDict', *args, **kwargs):
-    self.name = name
+    self._setname(name)
+    # self.name = name
     dict.__init__(self, *args, **kwargs)
+  def _setname(self,name=None):
+    self.name = name if name is not None else "cmd [% 2d]"%self.cmd
 
   def __getitem__(self,key):
     '''automatically return x,y,z for 0,1,2'''
     if isinstance(key,int) and key in self.full and self.full[key] in self.allkeys():
       return dict.get(self,self.full[key])
+    if isinstance(key,slice):
+      return [self[ii] for ii in xrange(*key.indices(len(self)))]
     elif isinstance(key, str) and key.lower() in self.allkeys():
       return dict.get(self,key.lower())
     else:
@@ -108,6 +116,7 @@ class IndexDict(dict):
     ''' automatically set all values of ref'''
     if isinstance(key,int) and key in self.full:
       dict.__setitem__(self,self.full[key].lower(),value)
+      if key == 3: self._setname()
     else:
       dict.__setitem__(self,key.lower(),value)
 
@@ -146,17 +155,50 @@ class IndexDict(dict):
   def allvalues(self):
     return dict.values(self)
 
-  # give this item a hash property so that we can do ItemDict[0:2]
   def keys(self):
     return sorted([self.ref[k] for k in self.ref])
-  def __hash__(self):
-    return hash(self.keys())
+  def values(self):
+    return [self.get(k) for k in self.keys()]
+
+  def upReturn(self,key,value):
+    ''' update key with value and then return'''
+    self[key] = value
+    return self
+    return deepcopy(self)
+
+  # # give this item a hash property so that we can do ItemDict[0:2]
+  # WHAT DOES HASH DO?
+  # def __hash__(self):
+  #   return hash(self.keys())
 
   # start at (0,0,0) rater than nans
   @classmethod
   def setorigin(s):
     self = IndexDict(name=' origin')
     self.cmd = 0
+    self.index = -1
     for key in self.ref:
       self[self.ref[key]] = 0.0
     return self
+
+
+if __name__ == '__main__':
+  print 'testing ItemDict:'
+  d = IndexDict.setorigin()
+  print d[0], d.x, d['x'] # should be ok for x,y,z
+  print d['cmd'], d.cmd, d['index'],d.index # should be ok for index
+  d.y = 1
+  print d[1], d.y, d['y']
+
+  for item in d:
+    print item # returns the labels like a dictionary
+
+  print d[0:3]# x,y,z
+  print d[0:4] # x,y,z,cmd
+  print d[0:10] # well that is probably not good
+  print d.keys()
+  print d.values()
+
+
+
+

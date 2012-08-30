@@ -21,9 +21,9 @@ ${gcode}
 ${footer}'''
 
 
-def nan():
-  ''' only used for _old_build'''
-  return [float('nan')]*3
+# def nan():
+#   ''' only used for _old_build'''
+#   return [float('nan')]*3
 def origin():
   return IndexDict.setorigin()
   # return [0.0]*3
@@ -42,14 +42,16 @@ def absolute(self,m=None,t=None):
   self.abs = True
 def relative(self,m=None,t=None):
   self.abs = False
-def move(self,m,t):
+def move(self,m,cmd, z=None, p=None):
   '''Moves to location. if NaN, use previous. handles rel/abs'''
-  
   for i,key in enumerate(m):
-    if not math.isnan(m[key]):
-      m[key] = convert(self,m[key])
-    else:
-      m[key] = self[-1][key]
+    if not math.isnan(m[i]): 
+      m[i] = convert(self,m[i])
+    else: 
+      m[i] = self[-1][i]
+  m[3] = cmd
+  if z: m[2] = z
+  if p: print m
   self.append(m)
 
   # loc = convert(self,m) # ensure everything is in inches
@@ -61,11 +63,17 @@ def convert(self,m):
   if self.units == 'mm':
     m = [x*25.4 for x in m]
   return m
+
 def millMove(self, next, height):
   '''Move the toolbit to the next mill location'''
   last = self[-1]
-  move(self, last[0:2]+[height], 0) # lift off of board
-  move(self, next[0:2]+[height], 0) # Move to next pos
+  move(self, last, 0, z=height, p=True) # lift off of board
+  move(self, next, 0, z=height, p=True) # Move to next pos
+  # move(self, last.upReturn('z',height), 0) # lift off of board
+  # move(self, next.upReturn('z',height), 0) # lift off of board
+  # move(self, last[0:2]+[height], 0) # lift off of board
+  # move(self, next[0:2]+[height], 0) # Move to next pos
+  print self[-2], self[-1]
 def circle(self,m,t):
   move(self, m,t)
   # FIXME
@@ -97,7 +105,11 @@ class Tool(list):
     if gcode: self.build(gcode)
     
   def __repr__(self):
+    '''Slightly more information when you print out this object.'''
     return '%s() : %i locations, units: %s'%(self.__class__.__name__, len(self),self.units)
+
+
+
 
   def build(self, gcode):
     '''New gCode that uses the indexedDict'''
@@ -122,27 +134,27 @@ class Tool(list):
           raise
           error('Missing command in GCMD: %d(%s)'%(cmd, line))
 
-  def _old_build(self, gcode, addIndex=False):
-    '''Parse gCode listing to follow a bit location
-    addindex [false] : adds the index to the last spot so that we can update and the push back'''
-    puts(colored.blue('Building Toolpath:'))
+  # def _old_build(self, gcode, addIndex=False):
+  #   '''Parse gCode listing to follow a bit location
+  #   addindex [false] : adds the index to the last spot so that we can update and the push back'''
+  #   puts(colored.blue('Building Toolpath:'))
     
-    # for each line of the gcode, accumulate the location of a toolbit
-    for i,line in enumerate(progress.bar(gcode)):
-    # for i,line in enumerate(gcode):
+  #   # for each line of the gcode, accumulate the location of a toolbit
+  #   for i,line in enumerate(progress.bar(gcode)):
+  #   # for i,line in enumerate(gcode):
 
-      move = nan()
-      if 'G' in line:
-        t = line['G']  # type of command
-        for j,x in enumerate(AXIS): # grab all changes
-          if x in line: move[j] = line[x]
-        # Apply changes to the object
-        try:
-          fcn = GCMD[t]
-          fcn(self,move,t)
-          if addIndex and (t in [0,1]): self[-1].append(line['index'])
-        except KeyError:
-          error('Missing command in GCMD: %d(%s)'%(t, line))
+  #     move = nan()
+  #     if 'G' in line:
+  #       t = line['G']  # type of command
+  #       for j,x in enumerate(AXIS): # grab all changes
+  #         if x in line: move[j] = line[x]
+  #       # Apply changes to the object
+  #       try:
+  #         fcn = GCMD[t]
+  #         fcn(self,move,t)
+  #         if addIndex and (t in [0,1]): self[-1].append(line['index'])
+  #       except KeyError:
+  #         error('Missing command in GCMD: %d(%s)'%(t, line))
   
   def boundBox(self):
     '''Returns the bounding box [[xmin,xmax],[ymin,ymax],[zmin,zmax]] 
@@ -156,17 +168,23 @@ class Tool(list):
         # if j == 2 : sys.exit()
     return box
 
-  def _badclean(self):
-    loc=[0.0,0.0,0.0]
-    for item in self:
-      # if distance(item[0:3],loc) > 3:
-      if max(item) > 10:
-        print 'xxx Removed: %s'%(str(item))
-        self.remove(item)
-      else:
-        loc = item
+  # def _badclean(self):
+  #   '''A temporary fix to check the bike program'''
+  #   loc=[0.0,0.0,0.0]
+  #   for item in self:
+  #     # if distance(item[0:3],loc) > 3:
+  #     if max(item) > 10:
+  #       print 'xxx Removed: %s'%(str(item))
+  #       self.remove(item)
+  #     else:
+  #       loc = item
 
 
+  def uniq(self):
+    '''make the toolpath uniq -- reverse + pop does it correctly '''
+    for i in reversed(range(1,len(self))):
+      if self[i] == self[i-1]:
+        self.pop(i)
 
   def length(self):
     '''get the length of a toolpath'''
@@ -174,14 +192,7 @@ class Tool(list):
     for i in range(len(self)-1):
       length += distance(self[i],self[i+1])
     return length
-  
-  def uniq(self):
-    '''make the toolpath uniq'''
-    for i in reversed(range(1,len(self))):
-      if self[i] == self[i-1]:
-        self.pop(i)
-    
-  
+
   def millLength(self):
     '''Gets the length of the self.mills part'''
     length = 0.0
@@ -189,20 +200,31 @@ class Tool(list):
       length += mill.length()
     return length
   
+  # def _old_groupMills(self):
+  #   '''Groups the toolpath into individual mills'''
+  #   puts(colored.blue('Grouping paths:'))
+    
+  #   mill = Mill();
+  #   for x,y,z,t in progress.bar(self):
+  #   # for i,[x,y,z,t]  in enumerate(self):
+  #     if t == 1:
+  #       mill.append([x,y,z])
+  #     else:
+  #       if len(mill) > 0:
+  #         self.mills.append(mill)
+  #         mill = Mill() # ready for more mills
   def groupMills(self):
     '''Groups the toolpath into individual mills'''
     puts(colored.blue('Grouping paths:'))
     
     mill = Mill();
-    for x,y,z,t in progress.bar(self):
-    # for i,[x,y,z,t]  in enumerate(self):
-      if t == 1:
-        mill.append([x,y,z])
+    for item in progress.bar(self):
+      if item.cmd == 1:
+        mill.append(item)
       else:
         if len(mill) > 0:
           self.mills.append(mill)
           mill = Mill() # ready for more mills
-  
   
   
   def uniqMills(self):
@@ -235,13 +257,14 @@ class Tool(list):
     distances = [distance(mill.closestLocation(X),X) for mill in self.mills]
     index = distances.index(min(distances))
     mill = self.mills.pop(index)
-    # print '%i : % 4.0f mil'%(index, min(distances)*1000.0)
     
     # reorder the path so that the start is close to x
     mill.reorderLocations(X)
     return mill
   
   
+
+
   def reTool(self, moveHeight=None):
     '''Rebuild the toolpath using the Mills
     moveHeight is in MILLs and is the height at which the machine moves'''
@@ -254,9 +277,15 @@ class Tool(list):
     heightInches = moveHeight/1000.
     
     for mill in self.mills:
+      puts(colored.red("%s"%mill))
+      # start by moving to the starting location of the mill
       millMove(self, mill[0], heightInches)
+
       for x in mill:
-        move(self, x, 1) # mill each location
+        # mill connecting each location 
+        move(self, x, 1) # it says move, but cmd == 1 so it is a mill
+
+    # ok done, so move to the  to origin
     millMove(self, origin(), heightInches)
   
   
@@ -264,11 +293,17 @@ class Tool(list):
     '''This returns a string with the GCODE in it.'''
     lines = []
     iMill = 1
-    for i,[x,y,z,t] in enumerate(self):
+    # for i,[x,y,z,t] in enumerate(self):
+    for i,item in enumerate(self):
+      x,y,z,cmd = item[0:4]
+
+      # OK this is a crappy hack to ensure that we put a nice little name before  each mill.
+      # so basically we need a move before this one, this one be a move and the next one be a mill
+      # and then we write a nice message
       if ([l[3] for l in self[i-1:i+2]] == [0,0,1]):
         lines.append('\n(Mill: %04i)'%(iMill))
         iMill += 1
-      lines.append('G%02i   X%.3f Y%.3f Z%.3f'%(t,x,y,z))
+      lines.append('G%02i   X%.3f Y%.3f Z%.3f'%(cmd,x,y,z))
     gcode ='\n'.join(lines)
     params = dict(units='G20' if (self.units == 'inch') else 'G21',
                   movement='G90' if self.abs else 'G91',
