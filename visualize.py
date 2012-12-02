@@ -35,10 +35,12 @@ def main(gfile, args=None):
 	tool = Tool(gcode)
 	tool.uniq()
 	box = tool.boundBox()
-
-	# proces and save image.
+	
+	# proces and save image
 	ext = args.ext if args is not None else '.pdf'
 	outfile = os.path.splitext(gfile.name)[0] + FILEENDING + ext
+	print box
+	print box[0:2]
 	image = Image(outfile, gridsize=box[0:2])
 	image.process(tool)
 	image.save()

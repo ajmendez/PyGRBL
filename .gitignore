@@ -5,3 +5,5 @@
 *.ps
 *.eps
 *.pdf
+*.tex
+*.log

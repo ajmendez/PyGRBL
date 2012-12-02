@@ -92,14 +92,23 @@ def memorize(function):
 
 class IndexDict(dict):
   ref = {0:'x',1:'y',2:'z'}
-  full = {3:'cmd',4:'index'}
+  full = {3:'cmd',4:'index',5:'i',6:'j'}
   full.update(ref)
-  def __init__(self,name='IndexDict', *args, **kwargs):
-    self._setname(name)
+  def __init__(self, *args, **kwargs):
+    # self._setname(name)
     # self.name = name
     dict.__init__(self, *args, **kwargs)
+    if 'name' in self: self._setname(self['name'])
   def _setname(self,name=None):
-    self.name = name if name is not None else "cmd [% 2d]"%self.cmd
+    ''' Set the name to be something'''
+    if name is not None:
+      self.name = name
+    else:
+       self.name = "G%02d"%self.cmd
+
+  def updateName(self):
+    ''' update the name to be the command'''
+    self._setname()
 
   def __getitem__(self,key):
     '''automatically return x,y,z for 0,1,2'''
@@ -135,8 +144,19 @@ class IndexDict(dict):
 
 
   def __repr__(self):
-    return '%s:(% .3f, % .3f, % .3f)'%(self.name, self[0],self[1],self[2])
+    if self.cmd == 2:
+      return '%s:(x=% .3f, y=% .3f, i=% .3f, j=% .3f)'%(self.name, self[0],self[1],self[5],self[6])
+    else:
+      return '%s:(% .3f,% .3f,% .3f)'%(self.name, self[0],self[1],self[2])
   
+  def toGcode(self):
+    ''' attempts to convert '''
+    if self.cmd == 2:
+      return 'G%02i   X%.3f Y%.3f I%.3f J%.3f'%(self.cmd,self.x,self.y, self.i, self.j)
+    else:
+      return 'G%02i   X%.3f Y%.3f Z%.3f'%(self.cmd,self.x,self.y,self.z)
+
+
   # for x in tool:
   # this should give the x,y,z axis labels like a dictionary
   def __iter__(self):
@@ -198,6 +218,11 @@ if __name__ == '__main__':
   print d[0:10] # well that is probably not good
   print d.keys()
   print d.values()
+
+  print ' reset'
+  e = IndexDict(d)
+  print d
+  print e
 
 
 

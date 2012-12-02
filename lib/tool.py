@@ -42,7 +42,7 @@ def absolute(self,m=None,t=None):
   self.abs = True
 def relative(self,m=None,t=None):
   self.abs = False
-def move(self,m,cmd, z=None, p=None):
+def move(self,m,cmd, z=None):
   '''Moves to location. if NaN, use previous. handles rel/abs'''
   for i,key in enumerate(m):
     if not math.isnan(m[i]): 
@@ -51,7 +51,6 @@ def move(self,m,cmd, z=None, p=None):
       m[i] = self[-1][i]
   m[3] = cmd
   if z: m[2] = z
-  if p: print m
   self.append(m)
 
   # loc = convert(self,m) # ensure everything is in inches
@@ -67,15 +66,11 @@ def convert(self,m):
 def millMove(self, next, height):
   '''Move the toolbit to the next mill location'''
   last = self[-1]
-  move(self, last, 0, z=height, p=True) # lift off of board
-  move(self, next, 0, z=height, p=True) # Move to next pos
-  # move(self, last.upReturn('z',height), 0) # lift off of board
-  # move(self, next.upReturn('z',height), 0) # lift off of board
-  # move(self, last[0:2]+[height], 0) # lift off of board
-  # move(self, next[0:2]+[height], 0) # Move to next pos
-  print self[-2], self[-1]
+  move(self, IndexDict(last), 0, z=height) # lift off of board
+  move(self, IndexDict(next), 0, z=height) # Move to next pos
+
 def circle(self,m,t):
-  move(self, m,t)
+  move(self, m, t)
   # FIXME
 
 GCMD = {0:  move,
@@ -123,15 +118,12 @@ class Tool(list):
           if x in line: move[x] = line[x]
         move['cmd'] = cmd
         move['index'] = line['index']
-        # print self[-1],
-        # print line, 
-        # print move
         try:
           fcn = GCMD[cmd]
           move.name = 'cmd[% 2i]'%cmd
           fcn(self, move, cmd)
         except KeyError:
-          raise
+          # raise
           error('Missing command in GCMD: %d(%s)'%(cmd, line))
 
   # def _old_build(self, gcode, addIndex=False):
@@ -219,7 +211,7 @@ class Tool(list):
     
     mill = Mill();
     for item in progress.bar(self):
-      if item.cmd == 1:
+      if item.cmd in (1,2,3):
         mill.append(item)
       else:
         if len(mill) > 0:
@@ -275,13 +267,13 @@ class Tool(list):
     self.units='inch'
     
     heightInches = moveHeight/1000.
-    
-    for mill in self.mills:
-      puts(colored.red("%s"%mill))
+
+    puts(colored.blue('Retooling path from mills:'))
+    for mill in progress.bar(self.mills):
       # start by moving to the starting location of the mill
       millMove(self, mill[0], heightInches)
 
-      for x in mill:
+      for i,x in enumerate(mill):
         # mill connecting each location 
         move(self, x, 1) # it says move, but cmd == 1 so it is a mill
 

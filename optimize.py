@@ -38,7 +38,8 @@ def opt(gfile):
   tool = Tool(gcode)
   tool.groupMills()
   puts(colored.blue('Toolpath length: %.2f inches, (mill only: %.2f)'%(tool.length(),tool.millLength())))
-  tool.setMillHeight(Z_MILL,Z_SPOT)
+  if args.setMillHeight:
+    tool.setMillHeight(Z_MILL,Z_SPOT)
   tool.uniqMills()
   
   # This starts the optimization process:
@@ -51,11 +52,11 @@ def opt(gfile):
     # mill = tool.mills.pop(0)
 
     # Basic optimization, find the next closest one and use it.
-    mill = tool.getNextMill(here)
+    # mill = tool.getNextMill(here)
 
     # Advanced Optimization:  Assumes that each mill path closed, so finds 
     #  the mill path which is close to the point and reorders it to be so
-    # mill = tool.getClosestMill(here)
+    mill = tool.getClosestMill(here)
     
     # you were here, now you are there
     # move mills and update location
@@ -79,12 +80,21 @@ def opt(gfile):
 
 
 
+# sometimes we want to keep the mill height
+EXTRAARGS = dict(ext=dict(args=['--keepMillHeight'],
+                          default=True,
+                          const=False,
+                          action='store_const',
+                          dest='setMillHeight',
+                          help='''Do not modify the mill height for 3d mills''') )
+
 
 
 
 # Initialize the args
 start = datetime.now()
 args = argv.arg(description='Python GCode optimizations',
+                otherOptions=EXTRAARGS, # Install some nice things
                 getFile=True, # get gcode to process
                 getMultiFiles=True, # accept any number of files
                 getDevice=False)

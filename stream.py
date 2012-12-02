@@ -26,8 +26,7 @@ args.gcode.close()
 
 # get a serial device and wake up the grbl, by sending it some enters
 with Communicate(args.device, args.speed, timeout=args.timeout,
-                 debug=args.debug,
-                 quiet=args.quiet) as serial:
+                 debug=args.debug, quiet=args.quiet) as serial:
   
   inBuf = [] # array of length of lines in buffer
   for i,line in enumerate(progress.bar(lines)):
@@ -35,7 +34,8 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
     l = re.sub('\s|\(.*?\)','',line.strip()).upper()+'\n' 
     
     # if this was a comment or blank line just go to the next one
-    if len(l.strip()) == 0: continue
+    if len(l.strip()) == 0:
+      continue
     
     inBuf.append(len(l))
     out = ''
@@ -44,7 +44,8 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
       tmp = serial.readline().strip()
       # puts(colored.green('\ni: %d l: %s\n'%(i,l)))
       # puts(colored.green('temp: '+tmp+'\n'))
-      if tmp.find('ok') < 0 or tmp.find('error') > 0:
+      if (tmp.find('ok') < 0 or tmp.find('error') > 0) and (len(tmp) > 0):
+      # if (tmp.find('ok') < 0 or tmp.find('error') > 0):
         puts(colored.red(' DEBUG: %s'%(tmp)+' '*20))
         # If we got here, probably debugging, check that gcode is not in return
         # echo, and just move on.
