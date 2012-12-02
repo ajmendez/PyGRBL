@@ -32,8 +32,9 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
   inBuf = [] # array of length of lines in buffer
   for i,line in enumerate(progress.bar(lines)):
     # Strip comments/spaces/new line, capitalize, and add line ending
-    l = re.sub('\s|\(.*?\)','',line.strip()).upper()+'\n' 
-    
+    # l = re.sub('\s|\(.*?\)','',line.strip()).upper()+'\n' 
+    l = line+'\n' 
+
     # if this was a comment or blank line just go to the next one
     if len(l.strip()) == 0: continue
     
@@ -45,7 +46,7 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
       # puts(colored.green('\ni: %d l: %s\n'%(i,l)))
       # puts(colored.green('temp: '+tmp+'\n'))
       if (tmp.find('ok') < 0 or tmp.find('error') > 0) and (len(tmp) > 0):
-        puts(colored.red(' DEBUG: %s'%(tmp)+' '*20))
+        puts(colored.red(' DEBUG: %d - %s'%(i, tmp)+' '*30))
         # If we got here, probably debugging, check that gcode is not in return
         # echo, and just move on.
         if args.debug:
