@@ -29,7 +29,7 @@ def deltaTime(start):
   while seconds > min(factors):
     for factor, noun in epocs:
       if seconds >= factor:
-        delta = seconds/factor
+        delta = int(seconds/factor)
         if delta > 1: noun +='s'
         out.append('%d %s'%(delta,noun))
         seconds -= factor*(delta)
