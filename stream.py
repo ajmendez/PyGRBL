@@ -31,33 +31,35 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
   inBuf = [] # array of length of lines in buffer
   for i,line in enumerate(progress.bar(lines)):
     # Strip comments/spaces/new line, capitalize, and add line ending
-    l = re.sub('\s|\(.*?\)','',line.strip()).upper()+'\n' 
-    
+    l = re.sub('\s|\(.*?\)','',line.strip()).upper()+'\n'  
+
     # if this was a comment or blank line just go to the next one
     if len(l.strip()) == 0:
       continue
     
-    inBuf.append(len(l))
     out = ''
     # if the serial is has text and we have not filled the buffer
     while sum(inBuf) >= RX_BUFFER_SIZE-1 | serial.inWaiting():
       tmp = serial.readline().strip()
-      # puts(colored.green('\ni: %d l: %s\n'%(i,l)))
-      # puts(colored.green('temp: '+tmp+'\n'))
-      if (tmp.find('ok') < 0 or tmp.find('error') > 0) and (len(tmp) > 0):
-      # if (tmp.find('ok') < 0 or tmp.find('error') > 0):
-        puts(colored.red(' DEBUG: %s'%(tmp)+' '*20))
-        # If we got here, probably debugging, check that gcode is not in return
-        # echo, and just move on.
-        if args.debug:
-          out += 'DEBUG'
-          inBuf.pop(0)
-      else:
+
+      # allows you to debug without a serial connection
+      if args.debug:
+        out='DEBUG'
+        inBuf.pop(0)
+        break
+
+      # recieved an ok == ready to send a new command
+      if 'ok' in tmp:
         out += tmp
         inBuf.pop(0)
+      else:
+        if len(tmp) > 0:
+          puts(colored.red('\n DEBUG: %s\n'%(tmp)))
+        
     
     #  send the command
     serial.write(l)
+    inBuf.append(len(l))
     if not args.quiet:
       puts(colored.blue('[%04d][Sent: %s][Buf:%3d]'%(i,l.strip().rjust(30),sum(inBuf))) +
            colored.green(' Rec: %s'%(out))+' '*12)
