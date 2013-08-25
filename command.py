@@ -5,6 +5,8 @@
 import re, readline, time
 from lib import argv
 from lib.communicate import Communicate
+from clint.textui import colored,puts
+
 
 # Initialize the args
 args = argv.arg(description='Simple python grbl command prompt for debuging the GRBL')
@@ -17,8 +19,14 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
   # now we send commands to the grbl, and wait waitTime for some response.
   while True:
     # Get some command
-    x = raw_input('grbl> ').strip()
-    if x in ['q','exit','quit']: break
-  
-    # run it if is not a quit switch
-    serial.run(x)
+    try:
+        x = raw_input('GRBL> ').strip()
+        if x.lower() in ['q','exit','quit']: break
+        if x.lower() in ['r','reset']: serial.sendreset()
+        if x in ['~']: serial.run('~\n?')
+        # run it if is not a quit switch
+        serial.run(x)
+        
+    except KeyboardInterrupt:
+        puts(colored.red('Emergency Feed Hold.  Enter "~" to continue'))
+        serial.run('!\n?')

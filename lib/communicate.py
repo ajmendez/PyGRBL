@@ -22,8 +22,9 @@ class Communicate():
     self.s = s
     self.run(' ')
     self.run('$ (Current Settings)')
-    self.run('G20 (Inches)')
-    self.run('G90 (Absolute)')
+    self.run('$H')
+    # self.run('G20 (Inches)')
+    # self.run('G90 (Absolute)')
     
     
   def run(self, cmd, singleLine=False):
@@ -41,6 +42,13 @@ class Communicate():
              newline=False)
       else:
         puts(colored.green(''.join([' | '+o+'\n' for o in out.splitlines()])))
+
+  def sendreset(self):
+      '''Sends crtl-x which is the reset key ::
+      \030  24  CAN  \x18  ^X    (Cancel)
+      '''
+      self.s.write(24)
+      
 
   def __enter__(self):
     return self

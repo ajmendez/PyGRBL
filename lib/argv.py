@@ -9,7 +9,7 @@ from util import error
 
 
 def arg(description=None, getDevice=True, 
-        defaultSpeed=9600, defaultTimeout=0.50,
+        defaultSpeed=9600, defaultTimeout=0.70,
         getFile=False, getMultiFiles=False,
         otherOptions=None):
   '''This is a simple arugment parsing function for all of the command line tools'''

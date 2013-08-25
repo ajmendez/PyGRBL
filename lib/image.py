@@ -63,7 +63,7 @@ class Image(object):
     gridcolors = [color.cmyk.Grey, None, None,  None,  None]
     ticklen =    [0.15,            0.1,  0.05,  0.025, 0.02]
 
-    parter = parter=graph.axis.parter.linear(ticks, labeldists=[1])
+    parter = graph.axis.parter.linear(ticks, labeldists=[1])
     painter = graph.axis.painter.regular(gridattrs=[attr.changelist(gridcolors)],
                                          # outerticklength=attr.changelist(ticklen), 
                                          innerticklength=attr.changelist(ticklen) )
@@ -78,7 +78,7 @@ class Image(object):
     self.g = graph.graphxy(x=x, y=y,width=pagesize[0], ratio=delta[0][2]/delta[1][2])
 
     self.c = canvas.canvas()
-    self.c.insert(self.g)
+    self.c.insert(self.g, [trafo.rotate(-90)])
     # self.d = document.document(document.page(self.c, margin=self.pagemargin))
 
     # Adds Origin in red
@@ -101,8 +101,10 @@ class Image(object):
 
     x = gridsize[0][0] if gridsize[0][0] < 0 else gridsize[0][1]
     y = gridsize[1][1] if gridsize[1][1] > 0 else gridsize[1][0]
-    gx,gy = self.g.vpos(0.01,0.99)
-    t = self.c.text(gx,gy, 'Bound[in]: (%0.1f,%0.1f)'%(x,y),[text.halign.boxleft, text.valign.top])
+
+    gx,gy = self.g.vpos(0.95,-0.05)
+    t = self.c.text(gx,gy, 'Bound[in]: (%0.1f,%0.1f)'%(x,y),
+                    [text.halign.boxright, text.valign.top])
     tpath = t.bbox().enlarged(3*unit.x_pt).path()
     self.c.draw(tpath, [color.cmyk.White, deco.filled([color.cmyk.White])])
     self.c.insert(t)
