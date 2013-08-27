@@ -1,6 +1,0 @@
-
-
-
-
-flash the device:
-  /Applications/Arduino.app/Contents/Resources/Java/hardware/tools/avr/bin/avrdude -C/Applications/Arduino.app/Contents/Resources/Java/hardware/tools/avr/etc/avrdude.conf -pm328p -cstk500v1 -P /dev/tty.usbmodem1d11 -b115200 -D -Uflash:w:grbl_0_6b_atmega328p_16mhz_9600.hex 

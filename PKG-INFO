@@ -1,0 +1,8 @@
+Metadata-Version: 1.0
+Name: PyGRBL
+Version: 0.1
+Summary: Python GRBL controller
+Home-page: http://ajmendez.github.io/pygrbl
+Author: Alexander Mendez
+Author-email: blue.space@gmail.com
+Description: PyGRBL is a set of scripts that improves the user interface of a GRBL arduino device. 

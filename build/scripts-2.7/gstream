@@ -1,13 +1,13 @@
-#!/usr/bin/env python
+#!/Library/Frameworks/Python.framework/Versions/7.3/Resources/Python.app/Contents/MacOS/Python
 # stream.py : A simple streamer
 # [2012.01.31] Mendez
 
 import re, sys, time
 from datetime import datetime,timedelta
-from lib.clint.textui import puts, colored, progress
-from lib import argv
-from lib.communicate import Communicate
-from lib.util import deltaTime
+from clint.textui import puts, colored, progress
+from pygrbl import argv
+from pygrbl.communicate import Communicate
+from pygrbl.util import deltaTime
 
 RX_BUFFER_SIZE = 128
 
