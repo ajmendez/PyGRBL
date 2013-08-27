@@ -2,14 +2,24 @@
 # optimize.py : Optimizes a set of paths from a pcbGcode.
 # [2011.12.25] Mendez written
 # [2012.07.31] Mendez cleaned up handles drills
-import sys, getopt, os, re
+
+# [System]
+import os
+import re
 from datetime import datetime
-from pygrbl import argv
+
+# [Installed]
+from clint.textui import colored, puts, indent, progress
+
+# [Package]
+from pygrbl import argv, util
 from pygrbl.util import deltaTime
 from pygrbl.gcode import GCode
 from pygrbl.tool import Tool
-from pygrbl.clint.textui import colored, puts, indent, progress
 
+
+# [Constants]
+DESC = 'Python GCode optimizations'
 FILEENDING = '_opt' # file ending for optimized file.
 Z_MOVE  =   20 # mil  [20] : Height above board for a move
 Z_MILL  =   -7 # mil  [-7] : Mill depth into board for traces
@@ -26,8 +36,8 @@ def opt(gfile):
   Reorders milling to get optimal
   Writes out to new file.'''
   
-  start = datetime.now()
-  puts(colored.blue('Optimizing file: %s\n Started: %s'%(gfile.name,datetime.now())))
+  start = util.deltaTime()
+  util.cprint('Optimizing file: {}\n  Started: {}'.format(gfile.name, start), color='blue')
   
   # Parse the gcode from the ascii to a list of command numbers and location
   gcode = GCode(gfile)
@@ -37,13 +47,17 @@ def opt(gfile):
   # where the bit needs to be moved / milled : [ [x,y,z,t], ...]
   tool = Tool(gcode)
   tool.groupMills()
-  puts(colored.blue('Toolpath length: %.2f inches, (mill only: %.2f)'%(tool.length(),tool.millLength())))
+  util.cprint('Toolpath length: {:.2f} inches, (mill only: {:.2f})'.format(tool.length(),tool.millLength()), color='blue')
+  
+  # Standardize the mill hight and spot height
   tool.setMillHeight(Z_MILL,Z_SPOT)
-  tool.uniqMills()
+  tool.uniqMills() # clean up the mills
+  
   
   # This starts the optimization process:
   # start at here, and go to the next path which is closest is the overall plan
-  puts(colored.blue('Starting Optimization:'))
+  util.cprint('Starting Optimization:', color='blue')
+  
   here = [0.0]*3 # start at the origin
   newMills = []  # accumulate mills here
   while len(tool.mills) > 0:
@@ -61,43 +75,45 @@ def opt(gfile):
     # move mills and update location
     newMills.append(mill) 
     here = newMills[-1][-1]
+  
+  # update the tool path with the new mill path
   tool.mills.extend(newMills)
   tool.reTool(Z_MOVE)
   tool.uniq()
-  puts(colored.blue('Toolpath length: %.2f inches, (mill only: %.2f)'%(tool.length(),tool.millLength())))
+  util.cprint('Toolpath length: {:.2f} inches, (mill only: {:.2f})'.format(tool.length(),tool.millLength()), color='blue')
 
   # Save this with the _opt file ending.
   output = tool.buildGcode()
   outfile = FILEENDING.join(os.path.splitext(gfile.name))
-  puts(colored.green('Writing: %s'%outfile))
+  util.cprint('Writing: {}'.format(outfile), color='green')
   with open(outfile,'w') as f:
     f.write(output)
   
   # how long did this take?
-  puts(colored.green('Time to completion: %s'%(deltaTime(start))))
-  print
+  util.cprint('Time to completion: {}\n'.format(deltaTime(start)), color='green')
 
 
 
 
 
 if __name__ == '__main__':
-    # Initialize the args
-    start = datetime.now()
-    args = argv.arg(description='Python GCode optimizations',
-                    getFile=True, # get gcode to process
-                    getMultiFiles=True, # accept any number of files
-                    getDevice=False)
+  # Initialize the args
+  start = util.deltaTime()
+  args = argv.arg(description=DESC,
+                  getFile=True,       # get gcode to process
+                  getMultiFiles=True, # accept any number of files
+                  getDevice=False)    # Dont need a Device
 
-    # optimize each file in the list
-    for gfile in args.gcode:
-      # only process things not processed before.
-      # c = re.match(r'(?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap)', gfile.name)
-      c = re.match(r'(.+)((?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap))', gfile.name)
-      if c: # either a drill.tap or etch.tap file
-        opt(gfile)
-
-    print '%s finished in %s'%(args.name,deltaTime(start))
+  # optimize each file in the list
+  for gfile in args.gcode:
+    # only process things that end with:
+    #  .drill.tap
+    #  .etch.tap
+    c = re.match(r'(.+)((?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap))', gfile.name)
+    if c is not None:
+      opt(gfile)
+  
+  util.cprint('{} finished in {}'.format(args.name, deltaTime(start)), color='green')
 
 
 

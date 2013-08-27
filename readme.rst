@@ -7,8 +7,6 @@ Purpose: Learning python and controlling a CNC.
 * Contact: blue.space@gmail.com
 
 
-
-
 Commands:
 ---------
 Here is a small list of some of the commands that one might find useful
@@ -22,13 +20,16 @@ in this package:
     * script/flatten.py    -- Generate raster gcode script.
     * script/findheight.py -- Generate a height gcode script
 
+
 Extra:
 ------
     * Mendez_modifier.terminal -- OSX terminal support for nice keystroke handling.
 
+
 ToDo:
 -----
     * Document EVERYTHING.
+
 
 History:
 --------

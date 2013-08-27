@@ -1,7 +1,14 @@
 #!/usr/bin/env python
 # terminal.py : some nice terminal things
 # [2012.08.06] Mendez
-import sys, os, termios, fcntl, tty, select
+
+# [System]
+import sys
+import os
+import termios
+import fcntl
+import tty
+import select
 
 
 class Terminal():

@@ -1,15 +1,24 @@
 #!/usr/bin/env python
 # tool.py : Parses a gcode file
 # [2012.07.31] Mendez
-import re,sys,math
+
+# [System]
+import re
+import sys
+import math
 from pprint import pprint
 from string import Template
 from copy import deepcopy
 
+# [Installed]
 from clint.textui import colored, puts, indent, progress
-from util import error, distance
-from mill import Mill
 
+# [Package]
+from pygrbl import util, mill
+# from util import error, distance
+# from mill import Mill
+
+# [Constants]
 AXIS='XYZ'
 
 TEMPLATE='''(Built with python and a dash of Mendez)
@@ -19,6 +28,9 @@ ${movement}
 ${gcode}
 (GCODE End)
 ${footer}'''
+
+
+
 
 
 def nan():

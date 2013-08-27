@@ -2,24 +2,42 @@
 # communicate.py : a simple serial device that can be a fake device.
 # [2012.07.30] - Mendez
 
-import serial, time, readline
+# [System]
+import serial
+import time
+import readline
+
+# [Installed]
 from clint.textui import puts, colored
 
+# [Package]
 
 
 class Communicate():
+  '''A simple wrapper around a serial device to communicate with GRBL device.
+  Setup some nice defaults too'''
   def __init__(self, device, speed, debug=False, quiet=False, timeout=None):
-    # select the right serial device
-    if debug: s = FakeSerial()
-    else:     s = serial.Serial(device, speed, timeout=timeout)
+    '''Start the serial device and set some nice commands to the grbl device
+    so that it is in a nice state'''
     
-    if not quiet: print '''Initializing grbl at device: %s
-  Please wait 1 second for device...'''%(device)
-    s.write("\r\n\r\n")
-    if not debug: time.sleep(1.0)
+    
+    # select the right serial device
+    if debug:
+        s = FakeSerial()
+    else:
+        s = serial.Serial(device, speed, timeout=timeout)
+    
+    if not quiet: 
+        print('Initializing grbl at device: {}\nPlease wait 1 second for device...'.format(device))
+    
+    s.write("\r\n\r\n") # wake up the device 
+    if not debug:
+        time.sleep(1.0) # wait for the device to wake up
     s.flushInput()
     self.timeout = timeout
     self.s = s
+    
+    # Run some commands to ensure that it is in a stable state.
     self.run(' ')
     self.run('$ (Current Settings)')
     self.run('G20 (Inches)')
@@ -30,7 +48,8 @@ class Communicate():
     '''Extends either serial device with a nice run command that prints out the
     command and also gets what the device responds with.'''
     puts(colored.blue(' Sending: [%s]'%cmd ), newline=(not singleLine))
-    self.write(cmd+'\n')
+    # self.write(cmd+'\n')
+    self.write(cmd)
     out = ''
     time.sleep(self.timeout)
     # while s.inWaiting() > 0: out += s.read(10)
@@ -43,6 +62,7 @@ class Communicate():
         puts(colored.green(''.join([' | '+o+'\n' for o in out.splitlines()])))
 
   def __enter__(self):
+    '''With constructor'''
     return self
   
   def __exit__(self, type, value, traceback):
@@ -67,22 +87,26 @@ class FakeSerial():
     does fake read/write.'''
     def __init__(self):
         '''init the fake serial and print out ok'''
-        self.waiting=1  # If we are waiting
-        self.ichar=0    # index of the character that we are on.
-        self.msg='ok'   # the message that we print when we get any command
+        self.waiting = 1  # If we are waiting
+        self.ichar = 0    # index of the message
+        self.msg = 'ok'   # default happy message
     
     def __getattr__(self, name):
         print 'DEBUG SERIAL: %s'%(name)
         return self.p
-    def p(self,x=None,y=None):
+        
+    def p(self, x=None, y=None):
         '''Lambda probably makes this better.'''
         pass
+        
     def flushInput(self):
-      '''Nothing to do but ignore the input which we are aready doing'''
-      pass
+        '''Nothing to do but ignore the input which we are aready doing'''
+        pass
+      
     def write(self, x):
         ''' this is pretty noisy so lets ignore it quietly.'''
         pass
+        
     def read(self, n=1):
         '''Return the message n characters at a time.'''
         if self.ichar < len(self.msg):
@@ -91,12 +115,15 @@ class FakeSerial():
         else:
             self.ichar = 0
             self.waiting = 0
-            out='\n'
+            out = '\n'
         return out
+        
     def readline(self):
-      time.sleep(0.1)
-      self.waiting = 0
-      return self.msg
+        '''Return any message'''
+        time.sleep(0.1)
+        self.waiting = 0
+        return self.msg
+        
     def inWaiting(self):
         '''Are we done pushing out a msg? '''
         out = self.waiting

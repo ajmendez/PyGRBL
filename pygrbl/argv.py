@@ -2,20 +2,66 @@
 # argv.py : a simple argument parser for the command line tools
 # [2012.07.30] - Mendez
 
-import argparse, sys
-# from clint.textui import colored, puts, indent
+# [System]
+import argparse
+import sys
 from glob import glob
-from util import error
+
+# [Installed]
+
+# [Package]
+from pygrbl import util
+
+
+def getdefaultdevice():
+    '''Lets try to find a default serial device.  Generally a compter has
+    a single GRBL/arduino connected so try to find it'''
+    # Where they generally are: 
+    devs = [
+        '/dev/tty.usb*', # Linux Arduino UNO?
+        '/dev/ttyACM*',  # Arduino Duemilanove
+        '/dev/tty.PL*',  # Prolific USB-to-Serial :: PL2303
+        '/dev/ttyUSB*'   # OSX Arduino UNO?
+    ]
+    
+    # Run though the list and see if this system has any of them
+    # There must be a way to do this in windows, but ?!
+    founddevs = []
+    for d in devs:
+      dev = glob(d)
+      if len(dev) > 0:
+          founddevs.extend(dev)
+    
+    # Dont default to anything if we did not find anything
+    if len(founddevs) == 1:
+      return founddevs[0]
+    else:
+        return None
+    
+
+class ArgParse(argparse.ArgumentParser):
+  def error(self, message):
+    self.print_help()
+    util.error(message)
 
 
 def arg(description=None, getDevice=True, 
         defaultSpeed=9600, defaultTimeout=0.50,
         getFile=False, getMultiFiles=False):
-  '''This is a simple arugment parsing function for all of the command line tools'''
+  '''This function simplifies the argument parsing for each of the scripts in the
+  bin directory.  This is basically a wrapper around the argparse libary
+  that simplifies the defaults since they are generally the same for each item
+  
+  @description -- A sentence that describes the the script. This is accessed when
+                  you run the function without required arguments or -h
+  @getDevice [True] -- This script needs to get a device
+  '''
   if not description:
     description='python grbl arguments'
   
-  parser = argparse.ArgumentParser(description=description)
+  # parser = argparse.ArgumentParser(description=description)
+  parser = ArgParse(description=description)
+  
   parser.add_argument('-q','--quiet',
                       action='store_true',
                       default=False,
@@ -27,9 +73,11 @@ def arg(description=None, getDevice=True,
                       
   # by default just get the device
   # HOWEVER if we want a file to be run, get it FIRST
+  # this means we can do a star and grab everything from the command line
   if getFile:
     nargs = '+' if getMultiFiles else 1
-    parser.add_argument('gcode', 
+    name = 'gcode_file ... gcode_file' if getMultiFiles else 'gcode_file'
+    parser.add_argument(name, 
                         nargs=nargs,
                         type=argparse.FileType('r'), 
                         help='gCode file to be read and processed.')
@@ -53,27 +101,29 @@ def arg(description=None, getDevice=True,
                         default=False,
                         help='GRBL serial dev. Generally this should be automatically found for you. You should specify this if it fails, or your have multiple boards attached.')  
 
-
   args = parser.parse_args()
-  
-  # lets see if we can find a default device to connect too.
-  if args.debug: args.device='fakeSerial'
-  if (getFile) and (not getMultiFiles): args.gcode = args.gcode[0]
-  if getDevice and not args.device:
-    # Where they generally are: 
-    devs = ['/dev/tty.usb*','/dev/ttyACM*','/dev/tty.PL*','/dev/ttyUSB*']
-    founddevs = []
-    for d in devs:
-      dev = glob(d)
-      if len(dev) > 0 : founddevs.extend(dev)
-    # ok we found something or we should fail
-    if len(founddevs) == 1:
-      args.device = founddevs[0]
-    else:
-      parser.print_help()
-      error('Found %d device(s) -- You need to connect a device, update %s, or specify wich device you want to use.'%(len(founddevs),sys.argv[0]))
-  
-  
+
+  # save the name of the argument
   args.name = sys.argv[0]
+
+  # if we want to get a single file then
+  if (getFile) and (not getMultiFiles):
+      args.gcode = args.gcode[0]
+  
+  # For debbuging use a fake serial device
+  if args.debug: 
+      args.device = 'fakeSerial'
+  
+  # If one has not defined as device from the command, or using 
+  # a fake one then try to get a default one. Error if we 
+  # find many serial devices or none
+  if getDevice and not args.device:
+      device = getdefaultdevice()
+      if device is None:
+        parser.print_help()
+        util.error('Found {} device(s) -- You need to connect a device, or specify wich device you want to use.'.format(len(device)))
+      else:
+          args.device = device
+  
   
   return args

@@ -1,11 +1,22 @@
 #!/usr/bin/env python
 # gcode.py : Parses a gcode file
 # [2012.07.31] Mendez
-import re,sys
+
+# [System]
+import re
+import sys
 from pprint import pprint
+
+# [Installed]
 from clint.textui import colored, puts, indent, progress
 
-CMDS='GXYZMP'
+# [Package]
+
+
+# [Constants]
+CMDS = 'GXYZMP' # all of the basic letter commands
+
+
 
 class GCode(list):
   def __init__(self, gcode):
@@ -35,21 +46,17 @@ class GCode(list):
     whitespace = r'\s'
     command = r''.join([r'(?P<%s>%s(?P<%snum>-?\d+(?P<%sdecimal>\.?)\d*))?'%(c,c,c,c) for c in CMDS])
     for i,line in enumerate(progress.bar(self.lines)):
-    # for i,line in enumerate(self.lines):
       l = line.strip()
+      
       # find comments, save them, and then remove them
       m = re.findall(comment,l)
       l = re.sub(whitespace+'|'+comment,'',l).strip().upper()
-      # l = re.sub(whitespace,'',l).upper()
 
       # Grab the commands
       c = re.match(command,l)
       
       # output commands to a nice array
       out = {}
-      # out['index'] = i
-      # out['line'] = line
-      # if m: out['comment'] = m
       for cmd in CMDS:
         if c.group(cmd):
           # either a float if '.' or a int
@@ -57,16 +64,7 @@ class GCode(list):
           out[cmd] = fcn(c.group(cmd+'num'))
           out['index'] = i
       
-      # Debug things
-      # print
-      # print i,l
-      # # print c.groups()
-      # print out
-      # if i > 50 : 
-      #   print
-      #   break
-      
-      
+      # if we have some commands save them
       if len(out) > 0:
         self.append(out)
       
