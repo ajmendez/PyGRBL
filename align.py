@@ -102,6 +102,7 @@ args = argv.arg(description='Simple python alignment tool',
 with Communicate(args.device, args.speed, timeout=args.timeout,
                  debug=args.debug,
                  quiet=args.quiet) as serial:
+                 
   # lets begin by giving the user some nice information
   puts(colored.blue(HELP))
   for line in startCommand.splitlines():

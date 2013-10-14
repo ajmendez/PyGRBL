@@ -10,8 +10,10 @@ from clint.textui import puts, colored
 class Communicate():
   def __init__(self, device, speed, debug=False, quiet=False, timeout=None):
     # select the right serial device
-    if debug: s = FakeSerial()
-    else:     s = serial.Serial(device, speed, timeout=timeout)
+    if debug:
+        s = FakeSerial()
+    else:
+        s = serial.Serial(device, speed, timeout=timeout)
     
     if not quiet: print '''Initializing grbl at device: %s
   Please wait 1 second for device...'''%(device)
@@ -20,10 +22,11 @@ class Communicate():
     s.flushInput()
     self.timeout = timeout
     self.s = s
-    self.run(' ')
-    self.run('$ (Current Settings)')
-    self.run('G20 (Inches)')
-    self.run('G90 (Absolute)')
+    
+    # Determine if we should run the homing on the machine
+    # also runs some nice defaults
+    self.setup()
+
     
     
   def run(self, cmd, singleLine=False):
@@ -41,6 +44,26 @@ class Communicate():
              newline=False)
       else:
         puts(colored.green(''.join([' | '+o+'\n' for o in out.splitlines()])))
+
+  def setup(self, dosetup=True):
+      '''Asks the user if should home / run from current location'''
+      while dosetup:
+        x = raw_input('Should we home the machine? [y(es)]/n(o)').strip()
+        if 'y' in x:
+          self.run('$H (Home The Machine')
+          dosetup = False
+        elif 'n' in x:
+          self.run('$X (Home The Machine')
+          dosetup = False
+        else:
+          puts(colored.red('Incorrect button pressed.'))
+      #
+      self.run(' ')
+      self.run('$ (Current Settings)')
+      self.run('G20 (Inches)')
+      self.run('G90 (Absolute)')
+          
+
 
   def __enter__(self):
     return self
