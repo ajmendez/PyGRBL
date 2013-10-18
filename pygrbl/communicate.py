@@ -51,7 +51,7 @@ class Communicate():
             dosetup = False
           else:
             puts(colored.red('Incorrect button pressed.'))
-        #
+        # Set some nice defaults -- should be moved into an init block
         self.run(' ')
         self.run('$ (Current Settings)')
         self.run('G20 (Inches)')
