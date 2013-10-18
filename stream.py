@@ -44,7 +44,7 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
       tmp = serial.readline().strip()
       # puts(colored.green('\ni: %d l: %s\n'%(i,l)))
       # puts(colored.green('temp: '+tmp+'\n'))
-      if tmp.find('ok') < 0 or tmp.find('error') > 0:
+      if 'ok' not in tmp and len(tmp) > 2:
         puts(colored.red(' DEBUG: %s'%(tmp)+' '*20))
         # If we got here, probably debugging, check that gcode is not in return
         # echo, and just move on.
