@@ -75,7 +75,8 @@ def update():
   tmp = [
       ['mm', 1/25.4],
       ['cm', 1/25.4],
-      ['inch', 1.0],
+      ['in', 1.0],   # a nice shortcut
+      ['inch', 1.0],  
       ['mil', 1/1000.0]
   ]
   units, scales = zip(*tmp)
@@ -122,7 +123,7 @@ if __name__ == '__main__':
     puts(colored.blue(HELP))
     for line in STARTCOMMAND.splitlines():
       serial.run(line)
-  
+    
     # Not only do we need to talk to the serial device, 
     # we also need some input from the user, so create 
     # a terminal object to do this.

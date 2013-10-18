@@ -38,10 +38,24 @@ class Communicate():
     self.s = s
     
     # Run some commands to ensure that it is in a stable state.
-    self.run(' ')
-    self.run('$ (Current Settings)')
-    self.run('G20 (Inches)')
-    self.run('G90 (Absolute)')
+    self.setup()
+  def setup(self, dosetup=True):
+        '''Asks the user if should home / run from current location'''
+        while dosetup:
+          x = raw_input('Should we home the machine? [y(es)]/n(o)').strip()
+          if 'y' in x:
+            self.run('$H (Home The Machine)')
+            dosetup = False
+          elif 'n' in x:
+            self.run('$X (Use current location.)')
+            dosetup = False
+          else:
+            puts(colored.red('Incorrect button pressed.'))
+        #
+        self.run(' ')
+        self.run('$ (Current Settings)')
+        self.run('G20 (Inches)')
+        self.run('G90 (Absolute)')
     
     
   def run(self, cmd, singleLine=False):
@@ -56,7 +70,7 @@ class Communicate():
     while self.inWaiting() > 0: out += self.readline()
     if out != '':
       if singleLine:
-        puts(colored.green('[%s]'%', '.join([o for o in out.splitlines()])),
+        puts(colored.green('[{}]'.format(', '.join([o for o in out.splitlines()]))),
              newline=False)
       else:
         puts(colored.green(''.join([' | '+o+'\n' for o in out.splitlines()])))

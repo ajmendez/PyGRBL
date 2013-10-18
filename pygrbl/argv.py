@@ -119,9 +119,10 @@ def arg(description=None, getDevice=True,
   # find many serial devices or none
   if getDevice and not args.device:
       device = getdefaultdevice()
-      if device is None:
+      ndev = 0 if device is None else len(device)
+      if ndev != 1:
         parser.print_help()
-        util.error('Found {} device(s) -- You need to connect a device, or specify wich device you want to use.'.format(len(device)))
+        util.error('Found {:d} device(s) -- You need to connect a device, or specify wich device you want to use.'.format(ndev))
       else:
           args.device = device
   

@@ -38,3 +38,7 @@ History:
     * [2012/08] -- Updated documentation and cleaned up.
     * [2013/08] -- Switched to github public.
 
+Notes:
+------
+# python setup.py register
+# python setup.py sdist bdist_wininst upload
