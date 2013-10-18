@@ -4,7 +4,7 @@ from distutils.core import setup
 #readme = open('readme.rst').read()
 
 setup(name='pygrbl',
-      version="0.2.1",
+      version="0.2.2",
       
       description='pyGRBL :: A simple way of controlling a CNC with GRBL',
       long_description='', 
