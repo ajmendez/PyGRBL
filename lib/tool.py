@@ -15,6 +15,7 @@ AXIS='XYZ'
 TEMPLATE='''(Built with python and a dash of Mendez)
 (GCODE Start nCommands:${ncommand} npaths:${nmill})
 ${units}
+${spindle}
 ${movement}
 ${gcode}
 (GCODE End)
@@ -206,12 +207,13 @@ class Tool(list):
         iMill += 1
       lines.append('G%02i   X%.3f Y%.3f Z%.3f'%(t,x,y,z))
     gcode ='\n'.join(lines)
-    params = dict(units='G20' if (self.units == 'inch') else 'G21',
-                  movement='G90' if self.abs else 'G91',
+    params = dict(units='G20 (inch)' if (self.units == 'inch') else 'G21 (metric)',
+                  spindle='M03 (Start Spindle)'
+                  movement='G90 (absolute)' if self.abs else 'G91 (relative)',
                   gcode=gcode,
                   nmill=iMill,
                   ncommand=len(self),
-                  footer='')
+                  footer='M05 (Stop Spindle)')
     return Template(TEMPLATE).substitute(params)
 
 
