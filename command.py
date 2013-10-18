@@ -10,9 +10,12 @@ from lib.communicate import Communicate
 args = argv.arg(description='Simple python grbl command prompt for debuging the GRBL')
 
 # get a serial device and wake up the grbl, by sending it some enters
-with Communicate(args.device, args.speed, timeout=args.timeout,
+with Communicate(args.device, args.speed, 
+                 timeout=args.timeout,
                  debug=args.debug,
-                 quiet=args.quiet) as serial:
+                 quiet=args.quiet,
+                 home=args.home,
+                 spindle=args.spindle) as serial:
   
   # now we send commands to the grbl, and wait waitTime for some response.
   while True:

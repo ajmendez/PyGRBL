@@ -8,7 +8,13 @@ from clint.textui import puts, colored
 
 
 class Communicate():
-  def __init__(self, device, speed, debug=False, quiet=False, timeout=None):
+  def __init__(self, device, speed, 
+               debug=False, quiet=False, 
+               home=False, spindle=False,
+               timeout=None):
+    self.home = home
+    self.spindle = spindle
+    
     # select the right serial device
     if debug:
         s = FakeSerial()
@@ -46,28 +52,36 @@ class Communicate():
 
   def setup(self, dosetup=True):
       '''Asks the user if should home / run from current location'''
-      while dosetup:
-        x = raw_input('Should we home the machine? [y(es)]/n(o)').strip()
-        if 'y' in x:
-          self.run('$H (Home The Machine)')
-          dosetup = False
-        elif 'n' in x:
-          self.run('$X (Use Current Location)')
-          dosetup = False
-        else:
-          puts(colored.red('Unknown response. Please answer [y/n]'))
+      if self.debug:
+        while dosetup:
+          if self.home:
+              x = 'yes'
+          else:
+            x = raw_input('Should we home the machine? [y(es)]/n(o)').strip()
+          if 'y' in x:
+            self.run('$H (Home The Machine)')
+            dosetup = False
+          elif 'n' in x:
+            self.run('$X (Use Current Location)')
+            dosetup = False
+          else:
+            puts(colored.red('Unknown response. Please answer [y/n]'))
       #
       self.run(' ')
       self.run('$ (Current Settings)')
       self.run('G20 (Inches)')
       self.run('G90 (Absolute)')
-          
+      if self.spindle:
+          self.run('M03 (Start Spindle)')
 
 
   def __enter__(self):
     return self
   
   def __exit__(self, type, value, traceback):
+    if self.spindle:
+      self.run('M05 (Stop Spindle)')
+    
     self.s.setDTR(False)
     time.sleep(0.022)
     self.s.setDTR(True)

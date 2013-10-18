@@ -46,14 +46,23 @@ def arg(description=None, getDevice=True,
                         default=defaultTimeout,
                         type=float,
                         help='Serial Port Timeout: Amount of time to wait before gathering data for display [%.2f]'%(defaultTimeout))
-    
+
+    parser.add_argument('-H','--home', 
+                        action='store_true',
+                        default=False,
+                        help='Automatically home machine')
+    parser.add_argument('-S', '--spindle',
+                        action='store_true',
+                        default=False,
+                        help='Start Spindle')
     parser.add_argument('device',
                         nargs='?',
                         # action='store_true',
                         default=False,
                         help='GRBL serial dev. Generally this should be automatically found for you. You should specify this if it fails, or your have multiple boards attached.')  
-
-
+    
+    
+ 
   args = parser.parse_args()
   
   # lets see if we can find a default device to connect too.

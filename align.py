@@ -15,7 +15,8 @@ RIGHT = ['\x1b[D']
 LEFT = ['\x1b[C']
 RAISE = ['a','A']
 LOWER = ['z','Z']
-
+SPINDLE = ['t','T']
+SPINDLESTAT = [False] # HACK?!! 
 # I might also want to implement this
 # from curses import KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT
 
@@ -27,6 +28,7 @@ G0 X0.000 Y0.000 Z0.000
 HELP = '''\
 Board Alignment Keys:
 q/Q        : Quit
+t/T        : Toggle Spindle
 u/U        : Update moveLength -- Amount to nudge 
 Arrow Keys : Move in X [Forward/Back]
                      Y [Left/Right]
@@ -44,6 +46,16 @@ def move(direction=''):
     I have this function which reads in the 
     direction and which direction to go, and
     then it pushes some gcode to the grbl'''
+  if direction in SPINDLE:
+    if not SPINDLESTAT[0]:
+      serial.run('m3 (Start Spindle)')
+      SPINDLESTAT[0] = True
+    else:
+      serial.run('m5 (Stop Spindle)')
+      SPINDLESTAT[0] = False
+    return
+          
+      
   c = re.match(r'(?P<axis>X|Y|Z)(?P<dir>\+|\-)',direction, re.IGNORECASE)
   if not c: puts(colored.red('FAILED MOVE!!! check code: %s'%direction))
   
@@ -101,7 +113,9 @@ args = argv.arg(description='Simple python alignment tool',
 # Using with logic to handle tear down and the sort.
 with Communicate(args.device, args.speed, timeout=args.timeout,
                  debug=args.debug,
-                 quiet=args.quiet) as serial:
+                 quiet=args.quiet,
+                 home=args.home,
+                 spindle=args.spindle) as serial:
                  
   # lets begin by giving the user some nice information
   puts(colored.blue(HELP))
@@ -116,14 +130,15 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
       if terminal.isData():
         c = terminal.getch()
         terminal.wait()
-        if   c in   QUIT: sys.exit() # Quit the program
-        elif c in UPDATE: moveLength = update()
-        elif c in     UP: move('X-')
-        elif c in   DOWN: move('X+')
-        elif c in  RIGHT: move('Y-')
-        elif c in   LEFT: move('Y+')
-        elif c in  RAISE: move('Z+')
-        elif c in  LOWER: move('Z-')
+        if   c in    QUIT: sys.exit() # Quit the program
+        elif c in  UPDATE: moveLength = update()
+        elif c in      UP: move('X-')
+        elif c in    DOWN: move('X+')
+        elif c in   RIGHT: move('Y-')
+        elif c in    LEFT: move('Y+')
+        elif c in   RAISE: move('Z+')
+        elif c in   LOWER: move('Z-')
+        elif c in SPINDLE: move('t')
         else: pass
         # else : print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
         print '<waiting for key>'
