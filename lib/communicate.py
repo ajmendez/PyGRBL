@@ -24,7 +24,6 @@ class Communicate():
     self.s = s
     
     # Determine if we should run the homing on the machine
-    # also runs some nice defaults
     self.setup()
 
     
@@ -50,13 +49,13 @@ class Communicate():
       while dosetup:
         x = raw_input('Should we home the machine? [y(es)]/n(o)').strip()
         if 'y' in x:
-          self.run('$H (Home The Machine')
+          self.run('$H (Home The Machine)')
           dosetup = False
         elif 'n' in x:
-          self.run('$X (Home The Machine')
+          self.run('$X (Use Current Location)')
           dosetup = False
         else:
-          puts(colored.red('Incorrect button pressed.'))
+          puts(colored.red('Unknown response. Please answer [y/n]'))
       #
       self.run(' ')
       self.run('$ (Current Settings)')
