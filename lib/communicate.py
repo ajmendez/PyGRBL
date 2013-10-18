@@ -12,6 +12,9 @@ class Communicate():
                debug=False, quiet=False, 
                home=False, spindle=False,
                timeout=None):
+    self.debug = debug
+    self.quiet = quiet
+    self.timeout = timeout
     self.home = home
     self.spindle = spindle
     
@@ -52,7 +55,7 @@ class Communicate():
 
   def setup(self, dosetup=True):
       '''Asks the user if should home / run from current location'''
-      if self.debug:
+      if not self.debug:
         while dosetup:
           if self.home:
               x = 'yes'
