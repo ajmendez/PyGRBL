@@ -4,7 +4,7 @@
 import os, re, sys
 from datetime import datetime
 from random import uniform
-from lib.clint.textui import puts, colored, progress
+from clint.textui import puts, colored, progress
 from lib.util import deltaTime, error, distance
 
 # from math import pi

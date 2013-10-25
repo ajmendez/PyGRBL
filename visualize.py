@@ -9,7 +9,7 @@ from lib.gcode import GCode
 from lib.tool import Tool
 from lib import argv
 from lib.util import deltaTime
-from lib.clint.textui import puts, colored
+from clint.textui import puts, colored
 
 
 FILEENDING ='' # keep it clean going to change file ending anyways
