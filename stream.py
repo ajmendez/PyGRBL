@@ -37,26 +37,29 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
     # if this was a comment or blank line just go to the next one
     if len(l.strip()) == 0: continue
     
-    inBuf.append(len(l)+5)
+    
     out = ''
     # if the serial is has text and we have not filled the buffer
     while sum(inBuf) >= RX_BUFFER_SIZE-1 | serial.inWaiting():
       tmp = serial.readline().strip()
+      
+      if args.debug:
+        out += 'DEBUG'
+        inBuf.pop(0)
+        break
+      
       # puts(colored.green('\ni: %d l: %s\n'%(i,l)))
       # puts(colored.green('temp: '+tmp+'\n'))
-      if 'ok' not in tmp and len(tmp) > 2:
+      if 'ok' not in tmp and len(tmp) > 1:
         puts(colored.red(' DEBUG: %s'%(tmp)+' '*20))
-        # If we got here, probably debugging, check that gcode is not in return
-        # echo, and just move on.
-        if args.debug:
-          out += 'DEBUG'
-          inBuf.pop(0)
       else:
         out += tmp
         inBuf.pop(0)
     
     #  send the command
     serial.write(l)
+    inBuf.append(len(l)+2)
+    
     if not args.quiet:
       puts(colored.blue('[%04d][Sent: %s][Buf:%3d]'%(i,l.strip().rjust(30),sum(inBuf))) +
            colored.green(' Rec: %s'%(out))+' '*12)
