@@ -17,7 +17,7 @@ Most of these commands should support:
     * align.py    -- Use arrowkeys/a/z to move mill bit
     * stream.py   -- Stream gcode to grbl.
     * optimize.py -- Optimization routine.
-
+    Scripts
     * flatten.py    -- Generate raster gcode script.
     * findheight.py -- Generate a height gcode script
 
