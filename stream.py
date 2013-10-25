@@ -37,7 +37,7 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
     # if this was a comment or blank line just go to the next one
     if len(l.strip()) == 0: continue
     
-    inBuf.append(len(l))
+    inBuf.append(len(l)+5)
     out = ''
     # if the serial is has text and we have not filled the buffer
     while sum(inBuf) >= RX_BUFFER_SIZE-1 | serial.inWaiting():
