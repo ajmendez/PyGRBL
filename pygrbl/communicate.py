@@ -16,80 +16,98 @@ from clint.textui import puts, colored
 class Communicate():
   '''A simple wrapper around a serial device to communicate with GRBL device.
   Setup some nice defaults too'''
-  def __init__(self, device, speed, debug=False, quiet=False, timeout=None):
+  def __init__(self, device, speed, 
+               timeout=None,
+               debug=False, 
+               quiet=False):
     '''Start the serial device and set some nice commands to the grbl device
     so that it is in a nice state'''
-    
+    self.timeout = timeout
+    self.debug = debug
+    self.quiet = quiet
     
     # select the right serial device
     if debug:
-        s = FakeSerial()
+      self.serial = FakeSerial()
     else:
-        s = serial.Serial(device, speed, timeout=timeout)
+      self.serial = serial.Serial(device, speed, timeout=timeout)
     
     if not quiet: 
-        print('Initializing grbl at device: {}\nPlease wait 1 second for device...'.format(device))
+      print('Initializing grbl at device: {}'.format(device))
+      print(' Please wait 1 second for device...')
     
-    s.write("\r\n\r\n") # wake up the device 
+    self.serial.write("\r\n\r\n") # wake up the device 
     if not debug:
-        time.sleep(1.0) # wait for the device to wake up
-    s.flushInput()
-    self.timeout = timeout
-    self.s = s
+      self.wait(1.0) # Wait for the device to wake up
+    self.serial.flushInput()
     
     # Run some commands to ensure that it is in a stable state.
     self.setup()
-  def setup(self, dosetup=True):
+  
+  
+  def setup(self, homemachine=True):
         '''Asks the user if should home / run from current location'''
-        while dosetup:
+        while homemachine:
           x = raw_input('Should we home the machine? [y(es)]/n(o)').strip()
           if 'y' in x:
             self.run('$H (Home The Machine)')
-            dosetup = False
+            homemachine = False
           elif 'n' in x:
             self.run('$X (Use current location.)')
-            dosetup = False
+            homemachine = False
           else:
             puts(colored.red('Incorrect button pressed.'))
+        
         # Set some nice defaults -- should be moved into an init block
         self.run(' ')
         self.run('$ (Current Settings)')
         self.run('G20 (Inches)')
         self.run('G90 (Absolute)')
-    
+  
+  def wait(self, timeout=None):
+    if timeout is None:
+        timeout = self.timeout
+    time.sleep(timeout)
+  
     
   def run(self, cmd, singleLine=False):
     '''Extends either serial device with a nice run command that prints out the
     command and also gets what the device responds with.'''
     puts(colored.blue(' Sending: [%s]'%cmd ), newline=(not singleLine))
     # self.write(cmd+'\n')
-    self.write(cmd)
+    self.serial.write(cmd)
+    self.wait()
+    
+    # Get the data sent back
     out = ''
-    time.sleep(self.timeout)
-    # while s.inWaiting() > 0: out += s.read(10)
-    while self.inWaiting() > 0: out += self.readline()
+    while self.serial.inWaiting(): 
+      out += self.serial.readline()
+    
+    # Print output to the screen
     if out != '':
       if singleLine:
-        puts(colored.green('[{}]'.format(', '.join([o for o in out.splitlines()]))),
-             newline=False)
+        tmp = '['+', '.join([o for o in out.splitlines()])+']'
       else:
-        puts(colored.green(''.join([' | '+o+'\n' for o in out.splitlines()])))
-
+        tmp = ''.join([' | '+o+'\n' for o in out.splitlines()])
+      puts(colored.green(tmp), newline=(not singleLine))
+      
   def __enter__(self):
     '''With constructor'''
     return self
   
   def __exit__(self, type, value, traceback):
-    self.s.setDTR(False)
-    time.sleep(0.022)
-    self.s.setDTR(True)
-    self.s.close()
+    self.serial.setDTR(False)
+    self.wait(0.022) # a short wait to ensure everything is ok
+    self.serial.setDTR(True)
+    self.serial.close()
     return isinstance(value, TypeError)
   
   def __getattr__(self, name):
-    '''if no command here, see if it is in serial.'''
+    '''I want this to act like the serial device, so for
+    any attribute that is not run above, this will attempt
+    to load it from the serial object.'''
     try:
-      return getattr(self.s, name)
+      return getattr(self.serial, name)
     except KeyError:
       raise AttributeError(name)
 
@@ -107,10 +125,11 @@ class FakeSerial():
     
     def __getattr__(self, name):
         print 'DEBUG SERIAL: %s'%(name)
-        return self.p
+        return self.sprint
         
-    def p(self, x=None, y=None):
-        '''Lambda probably makes this better.'''
+    def sprint(self, *args, **kwargs):
+        '''a default function / attribute to be a robustly ignorant 
+        fake serial device'''
         pass
         
     def flushInput(self):

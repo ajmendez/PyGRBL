@@ -6,9 +6,8 @@
 import re
 
 from clint.textui import puts, colored, progress
-from pygrbl import argv
+from pygrbl import argv, util
 from pygrbl.communicate import Communicate
-from pygrbl.util import deltaTime
 
 DESC = 'Simple python GRBL streamer'
 RX_BUFFER_SIZE = 128
@@ -78,11 +77,11 @@ if __name__ == '__main__':
                    quiet=args.quiet) as serial:
     
     # seperate this out for clarity
-    _stream(args, serial, lines)
+    stream(args, serial, lines)
     
     # It seems everything is ok, but dont reset everything untill buffer completes
     puts(colored.green('\n gCode finished streaming!'))
-    puts(colored.green('\n        RunTime: {}'.format(deltaTime(start))))
+    puts(colored.green('\n        RunTime: {}'.format(util.deltaTime(start))))
     puts(colored.red(  '\n    !!! WARNING: Please make sure that the buffer clears before finishing...') )
     raw_input(' <Press any key to finish>')
     raw_input('   Are you sure? Any key to REALLY exit.')
