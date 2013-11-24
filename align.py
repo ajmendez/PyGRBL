@@ -24,6 +24,7 @@ G20 (Inches)
 G91 (Incremental)
 G0 X0.000 Y0.000 Z0.000
 '''
+
 HELP = '''\
 Board Alignment Keys:
 q/Q        : Quit

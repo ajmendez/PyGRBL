@@ -32,7 +32,7 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
   for i,line in enumerate(progress.bar(lines)):
     # Strip comments/spaces/new line, capitalize, and add line ending
     l = re.sub('\s|\(.*?\)','',line.strip()).upper()+'\n'  
-
+    
     # if this was a comment or blank line just go to the next one
     if len(l.strip()) == 0:
       continue
