@@ -51,15 +51,18 @@ class Communicate():
       '''
       self.s.write(24)
       
+  def reset(self):
+      '''sends crtl-x to grbl to reset it -- clean up in the future'''
+      self.s.write(24)
 
   def __enter__(self):
     return self
   
   def __exit__(self, type, value, traceback):
-    self.s.setDTR(False)
-    time.sleep(0.022)
-    self.s.setDTR(True)
-    self.s.close()
+    #self.s.setDTR(False)
+    #time.sleep(0.022)
+    #self.s.setDTR(True)
+    #self.s.close()
     return isinstance(value, TypeError)
   
   def __getattr__(self, name):
