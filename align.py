@@ -2,7 +2,7 @@
 # align.py : Align the drill bit with the keyboard
 # [2012.08.03] Mendez written
 import readline, sys, re, time
-from lib.clint.textui import colored, puts
+from clint.textui import colored, puts
 from lib import argv
 from lib.communicate import Communicate
 from lib.terminal import Terminal

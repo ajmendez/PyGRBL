@@ -101,6 +101,9 @@ class Image(object):
 
     x = gridsize[0][0] if gridsize[0][0] < 0 else gridsize[0][1]
     y = gridsize[1][1] if gridsize[1][1] > 0 else gridsize[1][0]
+    x = abs(gridsize[0][0]-gridsize[0][1])
+    y = abs(gridsize[1][1]-gridsize[1][0])
+    print 'xxxx', gridsize, 'yyyy'
 
     gx,gy = self.g.vpos(0.95,-0.05)
     t = self.c.text(gx,gy, 'Bound[in]: (%0.1f,%0.1f)'%(x,y),

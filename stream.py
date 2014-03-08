@@ -4,7 +4,7 @@
 
 import re, sys, time
 from datetime import datetime,timedelta
-from lib.clint.textui import puts, colored, progress
+from clint.textui import puts, colored, progress
 from lib import argv
 from lib.communicate import Communicate
 from lib.util import deltaTime

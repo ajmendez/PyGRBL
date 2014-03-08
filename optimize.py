@@ -8,7 +8,7 @@ from lib import argv
 from lib.util import deltaTime
 from lib.gcode import GCode
 from lib.tool import Tool
-from lib.clint.textui import colored, puts, indent, progress
+from clint.textui import colored, puts, indent, progress
 
 FILEENDING = '_opt' # file ending for optimized file.
 Z_MOVE  =   20 # mil  [20] : Height above board for a move
