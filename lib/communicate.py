@@ -22,7 +22,7 @@ class Communicate():
     self.s = s
     self.run(' ')
     self.run('$ (Current Settings)')
-    self.run('$H')
+    # self.run('$H')
     # self.run('G20 (Inches)')
     # self.run('G90 (Absolute)')
     
