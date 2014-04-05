@@ -82,5 +82,5 @@ def arg(description=None, getDevice=True,
   
   
   args.name = sys.argv[0]
-  
+  args.argv = sys.argv
   return args
