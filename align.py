@@ -125,6 +125,6 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
         elif c in  LOWER: move('Z-')
         else: pass
         # else : print 'noop[%s]'%repr(c) # it is nice to give the user some idea what happened
-        time.sleep(0.5)
+        # time.sleep(0.5)
         print '<waiting for key>'
         terminal.accept()

@@ -79,5 +79,14 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
       RunTime: %s'''%(datetime.now(), deltaTime(start))) + 
     colored.red('''
   !!! WARNING: Please make sure that the buffer clears before finishing...''') )
-  raw_input('<Press any key to finish>')
-  raw_input('   Are you sure? Any key to REALLY exit.')
+  try:
+      raw_input('<Press any key to finish>')
+      raw_input('   Are you sure? Any key to REALLY exit.')
+  except KeyboardInterrupt as e:
+      serial.run('!\n?')
+      puts(colored.red('Emergency Stop! Enter "~" to continue. You can enter gCode to run here as well.'))
+      while True:
+          x = raw_input('GRBL> ').strip()
+          serial.run(x)
+          if '~' in x: break
+      
