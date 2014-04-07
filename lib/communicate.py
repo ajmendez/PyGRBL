@@ -9,6 +9,7 @@ from clint.textui import puts, colored
 
 class Communicate():
   def __init__(self, device, speed, debug=False, quiet=False, timeout=None):
+    if timeout is None: timeout = 0.1
     # select the right serial device
     if debug: s = FakeSerial()
     else:     s = serial.Serial(device, speed, timeout=timeout)
@@ -42,7 +43,8 @@ class Communicate():
              newline=False)
       else:
         puts(colored.green(''.join([' | '+o+'\n' for o in out.splitlines()])))
-
+    return out
+    
   def sendreset(self):
       '''Sends crtl-x which is the reset key ::
       \030  24  CAN  \x18  ^X    (Cancel)

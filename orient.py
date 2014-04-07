@@ -1,6 +1,26 @@
 #!/usr/bin/env python
-# orient
-# determines the orientation of the stock
+# orient.py -- determines the orientation of the edge location
+import numpy as np
+import pylab
+import cv
+import cv2
+from lib.communicate import Communicate
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 '''
 http://uvhar.googlecode.com/hg/test/laser_tracker.py
 
@@ -38,10 +58,6 @@ https://github.com/roblourens/facealign
 http://stackoverflow.com/questions/5368449/python-and-opencv-how-do-i-detect-all-filledcircles-round-objects-in-an-image
 '''
 
-import numpy as np
-import pylab
-import cv
-import cv2
 
 
 
@@ -224,40 +240,143 @@ def findrow2(frame):
         return cv.fromarray(im)
     except:
         return frame
+
+
+
+
+
+class Camera(object):
+    def __init__(self, cameranumber=0):
+        self.status = ''
+        self.cam = cv.CaptureFromCAM(cameranumber)
+        self.update() # setup frame
+        
+        self.size = cv.GetSize(self.frame)
+        self.center = tuple(x/2 for x in self.size)
+        
+        self.font = cv.InitFont(cv2.FONT_HERSHEY_DUPLEX, 0.5, 0.8, 
+                                shear=0, thickness=1, lineType=8)
+        self.font2 = cv.InitFont(cv2.FONT_HERSHEY_DUPLEX, 0.5, 0.8, 
+                                shear=0, thickness=3, lineType=8)
+        
+        self.color = cv.RGB(100, 130, 255)
     
+    def write(self, msg, loc):
+        cv.PutText(self.frame, msg, loc, self.font2, 0)
+        cv.PutText(self.frame, msg, loc, self.font, self.color)
+    
+    def update(self, frame=None):
+        if frame:
+            self.frame = frame
+        else:
+            self.frame = cv.QueryFrame(self.cam)
+    
+    def addoverlay(self):
+        # cv.PutText(self.frame, "orient.py", (10,self.size[1]-10), self.font, self.color)
+        self.write('orient.py', (10,self.size[1]-10) )
+        cv.Line(self.frame, (0,self.center[1]), (self.size[0],self.center[1]), self.color)
+        cv.Line(self.frame, (self.center[0],0), (self.center[0],self.size[1]), self.color)
+        cv.Circle(self.frame, self.center, 100, self.color)
+        
+        value = 0
+        count = 100
+        def onChange(x,*args):
+            print x
+        cv.CreateTrackbar('test','Window', value, count, onChange)
+    
+    def display(self, text):
+        # cv.PutText(self.frame, text, (20,20), self.font, self.color)
+        self.write(text, (20,20))
+    
+    def show(self):
+        cv.ShowImage("Window", self.frame)
+    
+    def interact(self):
+        c = (cv.WaitKey(25) & 0xFF)
+        
+        CHARMAP = {
+            27:'quit',     # q
+            113:'quit',    # esc
+            0:'forward',   # arrows
+            1:'backward',
+            2:'left',
+            3:'right',
+            97:'up',       # a
+            122:'down',    # d
+            43:'embiggen', # +
+            95:'lessen',   # -
+        }
+        if c in CHARMAP:
+            self.status = CHARMAP[c]
+        elif c != 255:
+            print repr(c)
+
+class Controller(object):
+    
+    def __init__(self, serial):
+        self.serial = serial
+        self.serial.run('G20G91 (inch, incremental)')
+        self.movelen = 0.1 #inch
+    
+    def run(self, cmd):
+        DELTA = 0.001
+        CMD = dict(
+            forward='X',
+            backward='X-',
+            left='Y',
+            right='Y-',
+            up='Z',
+            down='Z-',
+            embiggen=DELTA,
+            lessen=-DELTA,
+        )
+        if cmd in CMD:
+            d = CMD[cmd]
+            if isinstance(d, str):
+                self.serial.run('G0 {dir}{move:0.3f}'.format(dir=d, move=self.movelen))
+                return self.position()
+            elif cmd in ['embiggen', 'lessen']:
+                self.movelen += d
+                if self.movelen > 1: 
+                    self.movelen = 1.0
+                elif self.movelen <= 0:
+                    self.movelen = DELTA
+                return 'movelen: {:0.3f}inch'.format(self.movelen)
+        else:
+            return cmd
+        
+    def position(self):
+        '''TODO convert this to some nice text'''
+        status = self.serial.run('?')
+        return 'position: {}'.format(status)
 
 
 
 
 
-def main(fcn=None):
-    capture = cv.CaptureFromCAM(0)
-    cv.WaitKey(200)
-    font = cv.InitFont(cv.CV_FONT_HERSHEY_DUPLEX, 1, 1, 0, 2, 8)
-    while True:
-       frame = cv.QueryFrame(capture)
-       
-       if fcn:
-           frame = fcn(frame)
-       
-       cv.PutText(frame, "orient.py", (10,460), font, cv.RGB(17, 110, 255))
-       cv.Line(frame, (320,0), (320,480) , 255)
-       cv.Line(frame, (0,240), (640,240) , 255)
-       cv.Circle(frame, (320,240), 100, 255)
-   
-       cv.ShowImage("Window",frame)
-       # c = (cv.WaitKey(16) & 255)
-       c = (cv.WaitKey(100) & 255)
-   
-       if c in [27, 113]: #Break if user enters 'Esc', 'q'.
-          break
-       elif c != 255:
-           print c
-       
+def main():
+    
+    with Communicate('', None, debug=True) as serial:
+        camera = Camera()
+        controller = Controller(serial)
+        
+        while True:
+            camera.update()
+            camera.interact()
+            
+            camera.status = controller.run(camera.status)
+            if camera.status == 'quit':
+                break
+            else:
+                camera.display(camera.status)
+            
+            camera.addoverlay()
+            camera.show()
     
     
 
 
 if __name__ == "__main__":
     # findcircle()
-    main(findrow2)
+    # main(findrow2)
+    main()
