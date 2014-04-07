@@ -42,7 +42,7 @@ These are the settings that work on the old machine:
     $9 = 0.050 (cornering junction deviation in mm)
 
 New Machine 10/13:
- Sending: [$$]
+ 
   |  $0 = 755.906 (x, step/mm)
   |  $1 = 755.906 (y, step/mm)
   |  $2 = 755.906 (z, step/mm)
