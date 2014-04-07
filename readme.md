@@ -43,22 +43,22 @@ These are the settings that work on the old machine:
 
 New Machine 10/13:
  
-  |  $0 = 755.906 (x, step/mm)
-  |  $1 = 755.906 (y, step/mm)
-  |  $2 = 755.906 (z, step/mm)
-  |  $3 = 50 (step pulse, usec)
-  |  $4 = 260.000 (default feed, mm/min)
-  |  $5 = 520.000 (default seek, mm/min)
-  |  $6 = 128 (step port invert mask, int:10000000)
-  |  $7 = 50 (step idle delay, msec)
-  |  $8 = 50.000 (acceleration, mm/sec^2)
-  |  $9 = 0.050 (junction deviation, mm)
-  |  $10 = 0.200 (arc, mm/segment)
-  |  $11 = 25 (n-arc correction, int)
-  |  $12 = 3 (n-decimals, int)
-  |  $13 = 1 (report inches, bool)
-  |  $14 = 1 (auto start, bool)
-  |  $15 = 0 (invert step enable, bool)
+    $0 = 755.906 (x, step/mm)
+    $1 = 755.906 (y, step/mm)
+    $2 = 755.906 (z, step/mm)
+    $3 = 50 (step pulse, usec)
+    $4 = 260.000 (default feed, mm/min)
+    $5 = 520.000 (default seek, mm/min)
+    $6 = 128 (step port invert mask, int:10000000)
+    $7 = 50 (step idle delay, msec)
+    $8 = 50.000 (acceleration, mm/sec^2)
+    $9 = 0.050 (junction deviation, mm)
+    $10 = 0.200 (arc, mm/segment)
+    $11 = 25 (n-arc correction, int)
+    $12 = 3 (n-decimals, int)
+    $13 = 1 (report inches, bool)
+    $14 = 1 (auto start, bool)
+    $15 = 0 (invert step enable, bool)
 
 
 
