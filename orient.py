@@ -56,6 +56,7 @@ https://github.com/roblourens/facealign
 
 
 http://stackoverflow.com/questions/5368449/python-and-opencv-how-do-i-detect-all-filledcircles-round-objects-in-an-image
+http://stackoverflow.com/questions/11522755/opencv-via-python-on-linux-set-frame-width-height
 '''
 
 
@@ -373,10 +374,187 @@ def main():
             camera.addoverlay()
             camera.show()
     
+
+
+
+from pysurvey.plot import line, setup, legend, minmax
+from scipy.optimize import curve_fit
+
+def vslice(img, delta=20):
+    for i,index in enumerate(np.arange(0,img.shape[1],delta)):
+        middle = int(np.mean([index,index+delta]))
+        yield middle, img[:,index:index+delta]
+
+def findextreme(x, nabove=1.0):
+    cut = np.median(x) + nabove*np.std(x)
+    ii = np.where(x >= cut)[0]
+    return ii, x[ii], cut
+
+def fitquad(x,y):
+    xx = np.arange(0,1000,0.1)
+    a,b,c = np.polyfit(x,y,2)
+    yy = c + b*xx + a*xx**2.0
+    jj = np.where(yy > 0)[0]
+    return xx[jj],yy[jj]
+
+def gauss(x, *p):
+    c, A, mu, sigma = p
+    return c+A*np.exp(-(x-mu)**2/(2.*sigma**2))
+
+def fitgauss(x,y,offset=0):
+    xx = np.arange(0, 1000, 0.1)
+    p0 = [offset, np.max(y)-offset, np.mean(x), np.std(x)]
+    coeff, var_matrix = curve_fit(gauss, x, y, p0=p0)
+    gg = gauss(xx, *coeff)
+    return xx,gg
+
+
+from lmfit import minimize, Parameters, report_errors, conf_interval, report_ci
+def gauss2(p, x, y=None):
+    if y is None:
+        y = np.zeros(len(x))
+    return (p['amplitude'].value*
+            np.exp(-(x-p['mean'].value)**2/(2.*p['sigma'].value**2))
+            # + p['offset'].value
+            - y
+            )
+
+def fitgauss2(x,y,offset=0):
+    p = Parameters()
+    # p.add('offset', value=offset, min=50)
+    p.add('amplitude', value=np.max(y)-offset, min=10)
+    p.add('mean', value=np.mean(x), min=0)
+    p.add('sigma', value=np.std(x), min=0)
+    
+    out = minimize(gauss2, p, args=(x, y-offset) )
+    
+    # report_errors(p)
+    
+    xx = np.arange(0,1000,0.1)
+    return xx, gauss2(p,xx)+offset
+    
+    
+
+def test():
+    # filename = '/Users/ajmendez/Dropbox/Shared/Design/laser/test/1mW-635nm-Red-Laser-Module-Focused-Line-M635AL12416120_1.jpg'
+    filename = '/Users/ajmendez/Dropbox/Shared/Design/laser/test/debug_green.jpg'
+    img = cv2.imread(filename)
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    
+    out = []
+    for i,im in vslice(img):
+        vv = np.mean(im[:,:,1], axis=1)
+        
+        ii,v,cut = findextreme(vv, 0.2)
+        # x,y = fitquad(ii,v)
+        
+        
+        try:
+            # xx,gg = fitgauss(ii,v,cut)
+            xx,gg = fitgauss2(ii,v,cut)
+            
+            # setup(xr=[260,300])
+            # pylab.plot(vv)
+            # pylab.plot(xx,gg)
+            
+            mid = xx[np.argmax(gg)]
+            print i, mid
+            cv2.circle(img, (i,int(mid)), 2, 255)
+            out.append([i,mid])
+        except Exception as e:
+            print e
+            # zz,gz = fitgauss2(ii,v,cut)
+            
+            # setup(xr=minmax(ii))
+            # pylab.plot(ii,v)
+            # pylab.plot(xx,gg)
+            # pylab.plot(zz,gz)
+            # line(y=cut)
+            # pylab.show()
+            # return
+            cv2.circle(img, (i,0), 10, 75)
+        
+        # setup(figsize=(14,6), subplt=(1,3,1))
+        # pylab.imshow(im, interpolation=None, origin='lower', aspect='auto')
+        # 
+        # setup(subplt=(1,3,2))
+        # pylab.plot(vv)
+        # pylab.plot(ii, v)
+        # line(y=cut)
+        # 
+        # 
+        # setup(subplt=(1,2,2), xr=minmax(ii))
+        # pylab.plot(vv, '-s')
+        # pylab.plot(x,y)
+        # pylab.plot(xx,gg)
+        # 
+        # 
+        # setup(embiggenx=0.2, embiggeny=0.2)
+        # line(y=cut, x=x[np.argmax(y)], color='r')
+        # line(y=cut, x=np.average(ii,weights=v), color='k')
+        # line(y=cut, x=xx[np.argmax(gg)], color='b')
+        # 
+        # 
+        # pylab.show()
+        # return
+    
+    setup(figsize=(12,6), subplt=(1,2,1))
+    x,y = map(np.array,zip(*out))
+    print x,y
+    pylab.plot(x,y)
+    a,b = np.polyfit(x,y,1)
+    pylab.plot(x, b+a*x)
+    setup(subplt=(1,2,2))
+    diff = y-(b+a*x)
+    pylab.hist(diff, np.arange(-5,5,0.4))
+    line(x=[np.mean(diff),np.mean(diff)-np.std(diff), np.mean(diff)+np.std(diff)])
+    print np.std(diff)
+    pylab.show()
+        
+    
+    
+    cv2.imshow('window', img)
+    cv2.waitKey(0)
+
+
+def highres():
+    
+    
+    # this does not seem to work?!
+    # def set_res(cap, x,y):
+    #     cap.set(cv.CV_CAP_PROP_FRAME_WIDTH, int(x))
+    #     cap.set(cv.CV_CAP_PROP_FRAME_HEIGHT, int(y))
+    #     return str(cap.get(cv.CV_CAP_PROP_FRAME_WIDTH)),str(cap.get(cv.CV_CAP_PROP_FRAME_HEIGHT))
+    # cap = cv2.VideoCapture(0)
+    # x = [160 ,160 ,144 ,160 ,160 ,140 ,160 ,224 ,208 ,240 ,220 ,160 ,208 ,256 ,280 ,240 ,320 ,320 ,256 ,320 ,320 ,320 ,320 ,400 ,320 ,432 ,560 ,400 ,480 ,480 ,400 ,376 ,640 ,480 ,512 ,416 ,640 ,480 ,640 ,512 ,800 ,512 ,640 ,640 ,640 ,480 ,720 ,720 ,640 ,720 ,800 ,600 ,640 ,640 ,768 ,800 ,848 ,854 ,800 ,960 ,832 ,960 ,1024,1024,960 ,1024,960 ,1136,1024,1024,1152,1152,1280,1120,1280,1152,1280,1152,1024,1366,1280,1600,1280,1440,1280]
+    # 
+    # y = [120, 144, 168, 152, 160, 192, 200, 144, 176, 160, 176, 256, 208, 192, 192, 240, 192, 200, 256, 208, 224, 240, 256, 240, 320, 240, 192, 270, 234, 250, 300, 240, 200, 272, 256, 352, 240, 320, 256, 342, 240, 384, 320, 350, 360, 500, 348, 350, 400, 364, 352, 480, 480, 512, 480, 480, 480, 480, 600, 540, 624, 544,  576,  600, 640,  640, 720,  640,  768,  800,  720,  768,  720,  832,  768,  864,  800,  900,  1024,  768,  854,  768,  960,  900,  1024, ]
+    # 
+    # for w,h in zip(x,y):
+    #     print w,h,set_res(cap, w,h)
+    #     break
+    
+    cap = cv.CaptureFromCAM(0)
+    cv.SetCaptureProperty(cap,cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
+    cv.SetCaptureProperty(cap,cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
+    while True:
+        img = cv.QueryFrame(cap)
+        cv.ShowImage('window', img)
+        c = (cv2.waitKey(16) & 0xFF)
+        if c in [ord('q'),27]:
+            break
+        elif c == ord('c'):
+            cv.SaveImage('test.jpg', img)
+    
+    
+    
     
 
 
 if __name__ == "__main__":
     # findcircle()
     # main(findrow2)
-    main()
+    # main()
+    test()
+    
+    # highres()
