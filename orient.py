@@ -1,27 +1,25 @@
 #!/usr/bin/env python
 # orient.py -- determines the orientation of the edge location
-import numpy as np
-import pylab
+
+# system
+import sys
+
+# installed
 import cv
 import cv2
+import pylab
+import numpy as np
+
+# Package
 from lib.communicate import Communicate
 
 
 
 
 
+NOTE = '''
+This is just a collection of links that I thought were interesting at the time.
 
-
-
-
-
-
-
-
-
-
-
-'''
 http://uvhar.googlecode.com/hg/test/laser_tracker.py
 
 
@@ -135,43 +133,7 @@ def findcircle():
           break
        elif c != 255:
            print c
-   
-       # 
-       # 
-       # # cv.CvtColor(frame, gray, cv.CV_BGR2GRAY)
-       # gray = cv2.cvtColor(np.array(frame), cv2.COLOR_BGR2GRAY)
-       # blur = cv2.GaussianBlur(gray, (3,3), 0)
-       # 
-       # # GaussianBlur( src_gray, src_gray, Size(9, 9), 2, 2 );
-       # 
-       # # storage = cv.CreateMat(frame.width, 1, cv.CV_32FC3)
-       # # cv.HoughCircles(edges, storage, cv.CV_HOUGH_GRADIENT, 25, 100, 200, 10)
-       # circles = cv2.HoughCircles(gray, cv.CV_HOUGH_GRADIENT, 3, 100, None, 200, 100, 5, 16)
-       # 
-       # n = np.shape(circles)
-       # circles = np.reshape(circles,(n[1],n[2]))
-       # # print circles
-       # for circle in circles:
-       #     cv2.circle(frame,(circle[0],circle[1]),circle[2],(0,0,255))
-       # 
-       # # for i in xrange(storage.width - 1):
-       # #     radius = storage[i, 2]
-       # #     center = (storage[i, 0], storage[i, 1])
-       # #     cv.Circle(frame, center, radius, (0, 0, 255), 3, 8, 0)
-       # 
-       # 
-       # cv.PutText(frame, "orient.py", (10,460), font, cv.RGB(17, 110, 255))
-       # cv.Line(frame, (320,0), (320,480) , 255)
-       # cv.Line(frame, (0,240), (640,240) , 255)
-       # cv.Circle(frame, (320,240), 100, 255)
-       # 
-       # cv.ShowImage("Window",frame)
-       # c = (cv.WaitKey(16) & 255)
-       # 
-       # if c in [27, 113]: #Break if user enters 'Esc', 'q'.
-       #    break
-       # elif c != 255:
-       #     print c
+
 
 def findrowline(frame):
     hmin = 5 
@@ -377,40 +339,43 @@ def main():
 
 
 
-from pysurvey.plot import line, setup, legend, minmax
-from scipy.optimize import curve_fit
+
+
+
+from pysurvey.plot import line, setup, legend, minmax, embiggen
+from lmfit import minimize, Parameters, report_errors, conf_interval, report_ci
 
 def vslice(img, delta=20):
+    '''Generates delta slices of an image that can be used
+    to find points as a function of the x axis.  returns the 
+    middle pixel location and the image that is [heightxdelta] in
+    size.'''
     for i,index in enumerate(np.arange(0,img.shape[1],delta)):
         middle = int(np.mean([index,index+delta]))
         yield middle, img[:,index:index+delta]
 
 def findextreme(x, nabove=1.0):
+    '''Returns the index, array values, and cut value of the array
+    that is above the median and nabove*sigma of the array. This attempts
+    to find any line that is above the background.'''
     cut = np.median(x) + nabove*np.std(x)
     ii = np.where(x >= cut)[0]
     return ii, x[ii], cut
 
-def fitquad(x,y):
-    xx = np.arange(0,1000,0.1)
-    a,b,c = np.polyfit(x,y,2)
-    yy = c + b*xx + a*xx**2.0
-    jj = np.where(yy > 0)[0]
-    return xx[jj],yy[jj]
-
-def gauss(x, *p):
-    c, A, mu, sigma = p
-    return c+A*np.exp(-(x-mu)**2/(2.*sigma**2))
-
-def fitgauss(x,y,offset=0):
-    xx = np.arange(0, 1000, 0.1)
-    p0 = [offset, np.max(y)-offset, np.mean(x), np.std(x)]
-    coeff, var_matrix = curve_fit(gauss, x, y, p0=p0)
-    gg = gauss(xx, *coeff)
-    return xx,gg
+def getimrange(x, imrange):
+    xmin,xmax = minmax(x)
+    if imrange[0] > xmin:
+        imrange[0] = xmin
+    if imrange[1] < xmax:
+        imrange[1] = xmax
+    return imrange
 
 
-from lmfit import minimize, Parameters, report_errors, conf_interval, report_ci
 def gauss2(p, x, y=None):
+    '''A simple gaussian fit function.  p is a Parameters() object
+    that has an amplitude, mean, and sigma value.  Without setting
+    y this returns the gaussian.  with y it returns the deviation from
+    the fit gaussian -- used for fitting.'''
     if y is None:
         y = np.zeros(len(x))
     return (p['amplitude'].value*
@@ -419,121 +384,128 @@ def gauss2(p, x, y=None):
             - y
             )
 
-def fitgauss2(x,y,offset=0):
+def getarray(width=1000, delta=0.1):
+    '''Get an array to plot the gaussian.
+    There should be a better way of doing this.'''
+    return np.arange(0, width, delta)
+
+def fitgaussian(x,y,offset=0):
+    '''Fit a gaussian to the data points x,y.  
+    offset == the assumed floor for the gaussian (subtracted from 
+    the y array).  Originally I fit for both the amplitude and offset
+    however this sometimes caused issues due to the degeneracy. '''
+    
+    # set the parameters and some min values
     p = Parameters()
-    # p.add('offset', value=offset, min=50)
+    # generally the background is 20-30, so require at least 10 above that
     p.add('amplitude', value=np.max(y)-offset, min=10)
     p.add('mean', value=np.mean(x), min=0)
     p.add('sigma', value=np.std(x), min=0)
     
+    # minimise the fit.
     out = minimize(gauss2, p, args=(x, y-offset) )
-    
+    # print the fit values and uncert.  I may want to check the 
+    # out.success value to ensure that everything worked.
     # report_errors(p)
     
-    xx = np.arange(0,1000,0.1)
-    return xx, gauss2(p,xx)+offset
-    
-    
+    r = embiggen(minmax(x),0.2)
+    xx = np.arange(r[0], r[1], 0.1)
+    return p, xx, gauss2(p,xx)+offset
 
-def test():
-    # filename = '/Users/ajmendez/Dropbox/Shared/Design/laser/test/1mW-635nm-Red-Laser-Module-Focused-Line-M635AL12416120_1.jpg'
-    filename = '/Users/ajmendez/Dropbox/Shared/Design/laser/test/debug_green.jpg'
-    img = cv2.imread(filename)
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+def test(color='green', delta=20):
+    '''This is a simple testing function that loads an image and 
+    attemps to find a line in it. Originally I attempted to use fit
+    a quadratic to the extreme bit of the data.  This was ok, but did 
+    not capture the pointy-ness of the line.  Now I am using a guass fit.
+    '''
+    directory = '/Users/ajmendez/Dropbox/Shared/Design/laser/test/'
+    # Image from the web.
+    filename = directory+'1mW-635nm-Red-Laser-Module-Focused-Line-M635AL12416120_1.jpg'
+    color='red'
+    nsigma=1.0
+    # filename = directory + 'test2.jpg' # has ripples
+    # filename = directory + 'test.jpg'
+    filename = directory + 'debug_green.jpg'
+    color='green'
+    nsigma=1.0
     
     out = []
-    for i,im in vslice(img):
-        vv = np.mean(im[:,:,1], axis=1)
-        
-        ii,v,cut = findextreme(vv, 0.2)
-        # x,y = fitquad(ii,v)
-        
-        
+    img = cv2.imread(filename)
+    imrange = [img.shape[1],0]
+    index = ['blue','green','red'].index(color)
+    setup(figsize=(8,8), subplt=(2,2,2))
+    cmap  = pylab.cm.winter
+    cmap2 = pylab.cm.Blues
+    cmap3 = pylab.cm.Reds
+    
+    for i,im in vslice(img, delta):
+        imavg = np.mean(im[:,:,index], axis=1)
+
+        ex,ey,cut = findextreme(imavg, nsigma)
+        imrange = getimrange(ex,imrange)
         try:
-            # xx,gg = fitgauss(ii,v,cut)
-            xx,gg = fitgauss2(ii,v,cut)
+            p,x,g = fitgaussian(ex,ey,cut)
+            mid = p['mean'].value
             
-            # setup(xr=[260,300])
-            # pylab.plot(vv)
-            # pylab.plot(xx,gg)
+            # plot the fit
+            ic = 200*i/img.shape[1]+55
+            # line(x=mid, alpha=0.5, color=cmap(ic))
+            pylab.plot(ex,ey, alpha=0.7, color=cmap2(ic))
+            pylab.plot(x,g, alpha=0.7, color=cmap3(ic))
             
-            mid = xx[np.argmax(gg)]
-            print i, mid
-            cv2.circle(img, (i,int(mid)), 2, 255)
+            # Draw it to the image and then save the value
+            # cv2.circle(img, (i,int(mid)), 2, 255)
             out.append([i,mid])
+            print i, mid
         except Exception as e:
+            pylab.plot(imgavg)
+            pylab.show()
+            raise
             print e
-            # zz,gz = fitgauss2(ii,v,cut)
-            
-            # setup(xr=minmax(ii))
-            # pylab.plot(ii,v)
-            # pylab.plot(xx,gg)
-            # pylab.plot(zz,gz)
-            # line(y=cut)
-            # pylab.show()
-            # return
-            cv2.circle(img, (i,0), 10, 75)
-        
-        # setup(figsize=(14,6), subplt=(1,3,1))
-        # pylab.imshow(im, interpolation=None, origin='lower', aspect='auto')
-        # 
-        # setup(subplt=(1,3,2))
-        # pylab.plot(vv)
-        # pylab.plot(ii, v)
-        # line(y=cut)
-        # 
-        # 
-        # setup(subplt=(1,2,2), xr=minmax(ii))
-        # pylab.plot(vv, '-s')
-        # pylab.plot(x,y)
-        # pylab.plot(xx,gg)
-        # 
-        # 
-        # setup(embiggenx=0.2, embiggeny=0.2)
-        # line(y=cut, x=x[np.argmax(y)], color='r')
-        # line(y=cut, x=np.average(ii,weights=v), color='k')
-        # line(y=cut, x=xx[np.argmax(gg)], color='b')
-        # 
-        # 
-        # pylab.show()
-        # return
+            # cv2.circle(img, (i,0), 10, (0,0,255))
+    # Ensure that there is some space around the image
+    setup(xr=imrange, embiggenx=0.2, embiggeny=0.2)
     
-    setup(figsize=(12,6), subplt=(1,2,1))
-    x,y = map(np.array,zip(*out))
-    print x,y
-    pylab.plot(x,y)
-    a,b = np.polyfit(x,y,1)
-    pylab.plot(x, b+a*x)
-    setup(subplt=(1,2,2))
-    diff = y-(b+a*x)
-    pylab.hist(diff, np.arange(-5,5,0.4))
-    line(x=[np.mean(diff),np.mean(diff)-np.std(diff), np.mean(diff)+np.std(diff)])
-    print np.std(diff)
+    x,y = map(np.array, zip(*out))
+    p = np.polyfit(x,y,1)
+    fit = p[0]*x + p[1]
+    diff = y - fit
+    ns = np.std(diff)
+    
+    # next subplts -- add some extra analysis
+    setup(subplt=(2,2,1), title='Points offset by 100px',
+          xr=[0,img.shape[1]], yr=[0,img.shape[0]])
+    pylab.imshow(img, origin='lower', interpolation='nearest',
+                 aspect='equal')
+    # pylab.plot(x,y+100, '.', color='white', markeredgewidth=1)
+    pylab.scatter(x, y+100, marker='.', vmin=0, vmax=255, linewidth=0.4,
+                  c=200*x/img.shape[1]+55, edgecolor=(1,1,1,0.5), cmap=cmap2)
+    
+    # deviation from a line
+    setup(subplt=(4,2,5), ylabel='line and fit', xticks=False)
+    pylab.plot(x, y, color='blue', linewidth=2, alpha=0.7)
+    pylab.plot(x, fit, color='red', linewidth=2, alpha=0.7)
+    
+    setup(subplt=(4,2,7), ylabel='Deviation from \nline [pixel]')
+    pylab.plot(x, diff)
+    
+    setup(subplt=(2,2,4), 
+          title='Sigma:{:0.2f}px'.format(ns),
+          xlabel='Deviation distribution [pixel]')
+    pylab.hist(diff, np.arange(-3*ns,3*ns,ns/2.0))
+    line(x=[np.mean(diff),
+            np.mean(diff)-np.std(diff), 
+            np.mean(diff)+np.std(diff)])
+    pylab.tight_layout()
     pylab.show()
-        
     
-    
-    cv2.imshow('window', img)
-    cv2.waitKey(0)
-
-
-def highres():
-    
-    
-    # this does not seem to work?!
-    # def set_res(cap, x,y):
-    #     cap.set(cv.CV_CAP_PROP_FRAME_WIDTH, int(x))
-    #     cap.set(cv.CV_CAP_PROP_FRAME_HEIGHT, int(y))
-    #     return str(cap.get(cv.CV_CAP_PROP_FRAME_WIDTH)),str(cap.get(cv.CV_CAP_PROP_FRAME_HEIGHT))
-    # cap = cv2.VideoCapture(0)
-    # x = [160 ,160 ,144 ,160 ,160 ,140 ,160 ,224 ,208 ,240 ,220 ,160 ,208 ,256 ,280 ,240 ,320 ,320 ,256 ,320 ,320 ,320 ,320 ,400 ,320 ,432 ,560 ,400 ,480 ,480 ,400 ,376 ,640 ,480 ,512 ,416 ,640 ,480 ,640 ,512 ,800 ,512 ,640 ,640 ,640 ,480 ,720 ,720 ,640 ,720 ,800 ,600 ,640 ,640 ,768 ,800 ,848 ,854 ,800 ,960 ,832 ,960 ,1024,1024,960 ,1024,960 ,1136,1024,1024,1152,1152,1280,1120,1280,1152,1280,1152,1024,1366,1280,1600,1280,1440,1280]
-    # 
-    # y = [120, 144, 168, 152, 160, 192, 200, 144, 176, 160, 176, 256, 208, 192, 192, 240, 192, 200, 256, 208, 224, 240, 256, 240, 320, 240, 192, 270, 234, 250, 300, 240, 200, 272, 256, 352, 240, 320, 256, 342, 240, 384, 320, 350, 360, 500, 348, 350, 400, 364, 352, 480, 480, 512, 480, 480, 480, 480, 600, 540, 624, 544,  576,  600, 640,  640, 720,  640,  768,  800,  720,  768,  720,  832,  768,  864,  800,  900,  1024,  768,  854,  768,  960,  900,  1024, ]
-    # 
-    # for w,h in zip(x,y):
-    #     print w,h,set_res(cap, w,h)
-    #     break
-    
+def capture():
+    ''' This is a simple capture script. Type c to capture a frame 
+    to the current directory named test.jpg.  Quit with q or esc.   
+    This forces a high resolution image (1280 x 720). You can recapture 
+    and overwrite the image with hitting c again.
+    '''
     cap = cv.CaptureFromCAM(0)
     cv.SetCaptureProperty(cap,cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
     cv.SetCaptureProperty(cap,cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
@@ -545,16 +517,12 @@ def highres():
             break
         elif c == ord('c'):
             cv.SaveImage('test.jpg', img)
-    
-    
-    
-    
 
 
 if __name__ == "__main__":
-    # findcircle()
-    # main(findrow2)
-    # main()
-    test()
-    
-    # highres()
+    if 'capture' in sys.argv:
+        capture(sys.argv)
+    elif 'test' in sys.argv:
+        test()
+    else:
+        main()
