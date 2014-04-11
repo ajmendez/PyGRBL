@@ -3,6 +3,7 @@
 
 # system
 import sys
+from collections import deque
 
 # installed
 import cv
@@ -12,6 +13,16 @@ import numpy as np
 
 # Package
 from lib.communicate import Communicate
+
+__DOC__='''
+arrows: move
+a/d: up/down
+c: find circle
++/-: step size
+1-4: select hole
+s: set location
+'''
+
 
 
 
@@ -216,17 +227,21 @@ class Camera(object):
         
         self.size = cv.GetSize(self.frame)
         self.center = tuple(x/2 for x in self.size)
-        
-        self.font = cv.InitFont(cv2.FONT_HERSHEY_DUPLEX, 0.5, 0.8, 
-                                shear=0, thickness=1, lineType=8)
-        self.font2 = cv.InitFont(cv2.FONT_HERSHEY_DUPLEX, 0.5, 0.8, 
-                                shear=0, thickness=3, lineType=8)
+        self.currentcircles = deque(maxlen=40)
         
         self.color = cv.RGB(100, 130, 255)
+        self.font = cv.InitFont(cv2.FONT_HERSHEY_DUPLEX, 0.1, 0.5, 
+                                shear=0, thickness=1, lineType=8)
+        self.font2 = cv.InitFont(cv2.FONT_HERSHEY_DUPLEX, 0.1, 0.5, 
+                                shear=0, thickness=3, lineType=8)
+        
+        
     
     def write(self, msg, loc):
-        cv.PutText(self.frame, msg, loc, self.font2, 0)
-        cv.PutText(self.frame, msg, loc, self.font, self.color)
+        for i,line in enumerate(msg.splitlines()):
+            l = (loc[0], loc[1]+i*20)
+            cv.PutText(self.frame, line, l, self.font2, 0)
+            cv.PutText(self.frame, line, l, self.font, self.color)
     
     def update(self, frame=None):
         if frame:
@@ -236,16 +251,17 @@ class Camera(object):
     
     def addoverlay(self):
         # cv.PutText(self.frame, "orient.py", (10,self.size[1]-10), self.font, self.color)
+        self.write(__DOC__, (10,20))
         self.write('orient.py', (10,self.size[1]-10) )
         cv.Line(self.frame, (0,self.center[1]), (self.size[0],self.center[1]), self.color)
         cv.Line(self.frame, (self.center[0],0), (self.center[0],self.size[1]), self.color)
         cv.Circle(self.frame, self.center, 100, self.color)
         
-        value = 0
-        count = 100
-        def onChange(x,*args):
-            print x
-        cv.CreateTrackbar('test','Window', value, count, onChange)
+        # value = 0
+        # count = 100
+        # def onChange(x,*args):
+        #     print x
+        # cv.CreateTrackbar('test','Window', value, count, onChange)
     
     def display(self, text):
         # cv.PutText(self.frame, text, (20,20), self.font, self.color)
@@ -258,24 +274,122 @@ class Camera(object):
         c = (cv.WaitKey(25) & 0xFF)
         
         CHARMAP = {
-            27:'quit',     # q
-            113:'quit',    # esc
-            0:'forward',   # arrows
-            1:'backward',
-            2:'left',
-            3:'right',
-            97:'up',       # a
-            122:'down',    # d
-            43:'embiggen', # +
-            95:'lessen',   # -
+            27:'quit',        # q
+            113:'quit',       # esc
+            0:'forward',      # arrows
+            1:'backward',     #
+            2:'left',         #
+            3:'right',        #
+            97:'up',          # a
+            122:'down',       # d
+            43:'embiggen',    # +
+            95:'lessen',      # -
+            # location setting
+            115:'set',        # s
+            49: 'lowerleft',  # 1
+            50: 'upperleft',  # 2
+            51: 'lowerright', # 3
+            52: 'upperright', # 4
+            # circle finding
+            99: 'circle',     # c
         }
         if c in CHARMAP:
             self.status = CHARMAP[c]
         elif c != 255:
             print repr(c)
+    
+    
+    
+    def setupmeasure(self, color='red'):
+        self.index = ['blue','green','red'].index(color)
+        self.nsigma = 1.0
+        self.zero = 0 
+        self.zero = self.measure()
+        
+    
+    def measure(self, delta=200):
+        '''return the location of the point in pixels'''
+        # cv.CvtColor(self.frame, self.frame, cv.CV_BGR2HLS)
+        cv.Not(self.frame, self.frame)
+        
+        img = np.array(cv.GetMat(self.frame))[:,:,self.index]
+        out = []
+        for i,im in vslice(img, delta):
+            imavg = np.mean(im, axis=1)
+            ex,ey,cut = findextreme(imavg, self.nsigma)
+            try:
+                p,x,g = fitgaussian(ex,ey,cut)
+                out.append(p['mean'].value)
+            except KeyboardInterrupt as e:
+                print 'User canceled operation'
+                # sys.exit()
+            except Exception as e:
+                print 'Failed to fit: {} {}'.format(i,e)
+                # raise
+        return np.mean(out)
+    
+    
+    def circle(self):
+        if self.status != 'circle':
+            return
+        # get some circles
+        frame = np.array(cv.GetMat(self.frame))
+        img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # img = cv2.medianBlur(img, 5)
+        circles = cv2.HoughCircles(img, cv.CV_HOUGH_GRADIENT, 
+                                   dp=1,  # accumulator res
+                                   minDist=40, #min dist to next circle
+                                   param1=150, # canny param
+                                   param2=15, # accumulator threshold
+                                   minRadius=7,
+                                   maxRadius=25)
+        
+        try:
+            n = np.shape(circles)
+            if len(n) == 0:
+                raise ValueError('No Circles!')
+            circles = np.reshape(circles,(n[1],n[2]))
+            for x,y,r in circles:
+                cv2.circle(frame,(x,y),r,(255,255,255))
+                cv2.circle(frame,(x,y),2,(255,255,255),2)
+            
+            # add the most central one
+            tmp = self.centralitem(circles)
+            if tmp is not None:
+                cv2.circle(frame,(tmp[0],tmp[1]),tmp[2],(0,255,0),2)
+                self.currentcircles.append(tmp)
+        except Exception as e:
+            print e
+        
+        frame = self.plot_currentcircle(frame)
+        self.frame = cv.fromarray(frame)
+    
+    def plot_currentcircle(self, frame):
+        try:
+            # plot the average one
+            x,y,r = map(np.mean, zip(*self.currentcircles))
+            cv2.putText(frame, '{:0.1f}, {:0.1f}, {:0.2f}'.format(x,y,r),
+                        (int(x+20),int(y)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 
+                        0.5, (0,0,255), 1)
+            cv2.circle(frame,(x,y),r,(0,0,255),2)
+            cv2.circle(frame,(x,y),2,(0,0,255),2)
+        except:
+            pass
+        return frame
+
+    def centralitem(self, items):
+        mindist = 1e4
+        good = None
+        for item in items:
+            dist = (item[0]-self.center[0])**2.0 + (item[1]-self.center[1])**2.0
+            if dist <= mindist:
+                good = item
+                mindist = dist
+        return good
+
 
 class Controller(object):
-    
     def __init__(self, serial):
         self.serial = serial
         self.serial.run('G20G91 (inch, incremental)')
@@ -293,6 +407,7 @@ class Controller(object):
             embiggen=DELTA,
             lessen=-DELTA,
         )
+        
         if cmd in CMD:
             d = CMD[cmd]
             if isinstance(d, str):
@@ -305,13 +420,47 @@ class Controller(object):
                 elif self.movelen <= 0:
                     self.movelen = DELTA
                 return 'movelen: {:0.3f}inch'.format(self.movelen)
+        elif 'G' in CMD:
+            self.serial.run(cmd)
+            return 'Ran: {}'.format(cmd)
         else:
             return cmd
-        
+    
+    def setposition(self, cmd):
+        POS = ['set', 'lowerleft','lowerright','upperleft','upperright']
+        if cmd in pos:
+            return 'Set: {}'.format(cmd)
+        else:
+            return cmd
+    
     def position(self):
         '''TODO convert this to some nice text'''
         status = self.serial.run('?')
         return 'position: {}'.format(status)
+    
+    
+    
+    def setupscan(self):
+        self.x = 0
+        self.y = 0
+        try:
+            self.width = int(sys.argv[2])
+            self.height = int(sys.argv[3])
+            self.npts = int(sys.argv[4])
+        except Exception as e:
+            print e
+            raise ValueError('Could not parse the arguments'+
+                             'pass in {} scan [width] [height] [pts] :: [{}]'
+                             .format(sys.argv[0], sys.argv[2:]))
+
+    def scan(self):
+        '''scan over the width and heigh with npts locations.'''
+        for x in np.linspace(0,self.width, self.npts):
+            for y in np.linspace(0, self.height, self.npts):
+                self.run('G0 X{:0.3f} Y{:0.2f}'.format(x,y))
+                yield x,y
+        
+        
 
 
 
@@ -327,18 +476,56 @@ def main():
             camera.update()
             camera.interact()
             
-            camera.status = controller.run(camera.status)
+            # camera.status = controller.run(camera.status)
+            # camera.status = controller.position(camera.status)
             if camera.status == 'quit':
                 break
             else:
                 camera.display(camera.status)
-            
+                camera.status = 'circle'
+                camera.circle()
+            #     
+            # 
             camera.addoverlay()
             camera.show()
+
+
+
+
+def scan():
+    pylab.ion()
+    pylab.figure(1)
     
-
-
-
+    
+    with Communicate('', None, debug=True) as serial:
+        serial.timeout = 0.0001
+        camera = Camera()
+        camera.setupmeasure()
+        
+        controller = Controller(serial)
+        controller.setupscan()
+        
+        out = []
+        for x,y in controller.scan():
+            camera.update()
+            camera.interact()
+            
+            z = camera.measure()
+            out.append([x,y,z])
+            
+            if camera.status == 'quit':
+                break
+            camera.show()
+            
+            if len(out) > 0:
+                pylab.cla()
+                tmp = zip(*out)
+                sc = pylab.scatter(tmp[0],tmp[1],s=tmp[2], c=tmp[2], vmin=0, vmax=400)
+                print '{: 8.3f} {: 8.3f} {: 8.3f}'.format(x,y,z)
+            
+        pylab.ioff()
+        pylab.show()
+            
 
 
 
@@ -402,6 +589,7 @@ def fitgaussian(x,y,offset=0):
     p.add('mean', value=np.mean(x), min=0)
     p.add('sigma', value=np.std(x), min=0)
     
+    
     # minimise the fit.
     out = minimize(gauss2, p, args=(x, y-offset) )
     # print the fit values and uncert.  I may want to check the 
@@ -428,7 +616,11 @@ def test(color='green', delta=20):
     # filename = directory + 'test.jpg'
     filename = directory + 'debug_green.jpg'
     color='green'
-    nsigma=1.0
+    nsigma=1.5
+
+    filename = './test.jpg'
+    color='green'
+    nsigma=0.0
     
     out = []
     img = cv2.imread(filename)
@@ -459,7 +651,7 @@ def test(color='green', delta=20):
             out.append([i,mid])
             print i, mid
         except Exception as e:
-            pylab.plot(imgavg)
+            pylab.plot(ex, ey)
             pylab.show()
             raise
             print e
@@ -476,7 +668,7 @@ def test(color='green', delta=20):
     # next subplts -- add some extra analysis
     setup(subplt=(2,2,1), title='Points offset by 100px',
           xr=[0,img.shape[1]], yr=[0,img.shape[0]])
-    pylab.imshow(img, origin='lower', interpolation='nearest',
+    pylab.imshow(img[:,:,[2,1,0]], origin='lower', interpolation='nearest',
                  aspect='equal')
     # pylab.plot(x,y+100, '.', color='white', markeredgewidth=1)
     pylab.scatter(x, y+100, marker='.', vmin=0, vmax=255, linewidth=0.4,
@@ -499,7 +691,49 @@ def test(color='green', delta=20):
             np.mean(diff)+np.std(diff)])
     pylab.tight_layout()
     pylab.show()
+
+
+
+
+def test_circle():
+    frame = cv2.imread('./test.jpg')
+    img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # img = cv2.medianBlur(img, 5)
+    img = cv2.medianBlur(img, 3)
+    # img = cv2.GaussianBlur(img, (0,0), 0.1)
+    # frame = img
     
+    circles = cv2.HoughCircles(img, cv.CV_HOUGH_GRADIENT, 
+                               dp=1,  # accumulator res
+                               minDist=20, #min dist to next circle
+                               param1=100, # canny param
+                               param2=20, # accumulator threshold
+                               minRadius=5,
+                               maxRadius=20)
+    try:
+        n = np.shape(circles)
+        if len(n) == 0:
+            raise ValueError('No Circles!')
+        circles = np.reshape(circles,(n[1],n[2]))
+        for x,y,r in circles:
+            cv2.putText(frame, '{:0.2f}'.format(r),
+                        (int(x+2),int(y+2)), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 
+                        1, (0,0,255), 2)
+            
+            cv2.circle(frame,(x,y),r,(0,0,255))
+            cv2.circle(frame,(x,y),2,(0,0,255),3)
+        # cv2.circle(img,(x,y),r,(255,255,255))
+        # self.frame = cv.fromarray(img)
+    except Exception as e:
+        print 'Failed: {}'.format(e)
+    
+    cv2.imshow('window',frame)
+    cv2.waitKey()
+    
+
+
+
 def capture():
     ''' This is a simple capture script. Type c to capture a frame 
     to the current directory named test.jpg.  Quit with q or esc.   
@@ -507,22 +741,28 @@ def capture():
     and overwrite the image with hitting c again.
     '''
     cap = cv.CaptureFromCAM(0)
-    cv.SetCaptureProperty(cap,cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
-    cv.SetCaptureProperty(cap,cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
+    # cv.SetCaptureProperty(cap,cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
+    # cv.SetCaptureProperty(cap,cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
     while True:
         img = cv.QueryFrame(cap)
+        
         cv.ShowImage('window', img)
         c = (cv2.waitKey(16) & 0xFF)
         if c in [ord('q'),27]:
             break
         elif c == ord('c'):
+            print 'Saved Frame!'
             cv.SaveImage('test.jpg', img)
 
 
 if __name__ == "__main__":
     if 'capture' in sys.argv:
-        capture(sys.argv)
+        capture()
     elif 'test' in sys.argv:
         test()
+    elif 'circle' in sys.argv:
+        test_circle()
+    elif 'scan' in sys.argv:
+        scan()
     else:
         main()
