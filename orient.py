@@ -71,206 +71,83 @@ http://stackoverflow.com/questions/11522755/opencv-via-python-on-linux-set-frame
 
 
 
-
-
-def findcircle():
-
-    capture = cv.CaptureFromCAM(0)
-    cv.WaitKey(200)
-
-    # frame = cv.QueryFrame(capture)
-    # gray = cv.CreateImage(cv.GetSize(frame), 8, 1)
-    # edges = cv.CreateImage(cv.GetSize(frame), 8, 1)
-
-
-    font = cv.InitFont(cv.CV_FONT_HERSHEY_DUPLEX, 1, 1, 0, 2, 8)
-    ncirc = 0
-    while True:
-       frame = cv.QueryFrame(capture)
-       im = np.array(cv.GetMat(frame))
-       gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-       blur = cv2.medianBlur(gray, 5)
-       blur = cv2.medianBlur(blur, 5)
-       blur = cv2.medianBlur(blur, 5)
-       # blur = cv2.blur(blur, 5)
-       # im = blur
-   
-       circles = cv2.HoughCircles(blur, cv.CV_HOUGH_GRADIENT, 1,20,
-                                param1=100,param2=30,minRadius=9,maxRadius=20)
-   
-       try:
-           # circles = np.uint16(np.around(circles))
-           n = np.shape(circles)
-           if len(n) == 0:
-               continue
-           circles = np.reshape(circles,(n[1],n[2]))
-           d = 999.0
-           for x,y,r in circles:
-               cv2.circle(im,(x,y),r,(0,0,255))
-               cv2.circle(im,(x,y),2,(0,0,255),3)
-               nd = (x-320)**2.0 + (y-240)**2.0
-               if nd < d:
-                   tmp = x,y,r
-                   d = nd
-
-           x,y,r = tmp
-           cv2.circle(im,(x,y),r,(255,255,255))
-           if ncirc == 0:
-               circle = tmp
-           else:
-               circle = map(np.sum, zip(circle,tmp))
-           ncirc += 1
-           x,y,r = [int(c/float(ncirc)) for c in circle]
-           cv2.circle(im,(x,y),r,(255,0,255))
-           cv2.circle(im,(x,y),2,(255,0,255),3)
-       
-           if ncirc == 20: ncirc=0
-       
-      
-       except Exception as e:
-           raise
-           print 'x',
-   
-       frame = cv.fromarray(im)
-       cv.PutText(frame, "orient.py", (10,460), font, cv.RGB(17, 110, 255))
-       cv.Line(frame, (320,0), (320,480) , 255)
-       cv.Line(frame, (0,240), (640,240) , 255)
-       cv.Circle(frame, (320,240), 100, 255)
-   
-       cv.ShowImage("Window",frame)
-       c = (cv.WaitKey(16) & 255)
-   
-       if c in [27, 113]: #Break if user enters 'Esc', 'q'.
-          break
-       elif c != 255:
-           print c
-
-
-def findrowline(frame):
-    hmin = 5 
-    hmax = 6 # hmax = 180
-    # saturation
-    smin = 50
-    smax = 100
-    # value
-    vmin = 250
-    vmax = 256
-    
-    
-    tmp = cv.CreateImage(cv.GetSize(frame), 8, 1)
-    # tmp = cv.cvCloneImage(frame)
-    cv2.cvCvtColor(frame, tmp, cv.CV_BGR2HSV) # convert to HSV
-    # split the video frame into color channels
-    cv.cvSplit(hsv_image, h_img, s_img, v_img, None)
-
-    # Threshold ranges of HSV components.
-    cv.cvInRangeS(h_img, hmin, hmax, h_img)
-    cv.cvInRangeS(s_img, smin, smax, s_img)
-    cv.cvInRangeS(v_img, vmin, vmax, v_img)
-    cv.cvAnd(h_img, v_img, laser_img)
-    
-    
-    return laser_img
-    
-
-def findrow2(frame):
-    # return frame
-    im = np.array(cv.GetMat(frame))
-    gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-    ret, thresh = cv2.threshold(gray,127,255,cv2.THRESH_BINARY)
-    # thresh = cv2.adaptiveThreshold(gray, maxValue=255, 
-    #                     adaptiveMethod=cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-    #                     thresholdType=cv2.THRESH_BINARY,
-    #                     blockSize=3, C=127)
-    
-    contours,hier = cv2.findContours(thresh,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
-    
-    # thresh = cv2.dilate(thresh, 3)
-    kernel = np.ones((2,2),'uint8')
-    thresh = cv2.dilate(thresh, kernel)
-    thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
-    
-    delta = 20
-    for i in np.arange(0,thresh.shape[0],delta):
-        ii = np.argmax(np.mean(thresh[i:i+delta,20:thresh.shape[1]-20], axis=0))
-        thresh[i:i+delta,:] = 0
-        thresh[i:i+delta,ii] = 255
-        # return cv.fromarray(thresh)
-    
-    return cv.fromarray(thresh)
-    
-    try:
-        cnt = contours[0]
-    
-        # then apply fitline() function
-        [vx,vy,x,y] = cv2.fitLine(cnt,cv2.cv.CV_DIST_L2,0,0.01,0.01)
-
-        # Now find two extreme points on the line to draw line
-        lefty = int((-x*vy/vx) + y)
-        righty = int(((gray.shape[1]-x)*vy/vx)+y)
-    
-        cv2.line(im,(gray.shape[1]-1,righty),(0,lefty),255,2)
-    
-        return cv.fromarray(im)
-    except:
-        return frame
-
-
-
-
-
 class Camera(object):
     def __init__(self, cameranumber=0):
-        self.status = ''
+        '''wrapper for a cv capture object.  Defaults to the 
+        most recent camera (0).'''
+        self.status = '' # current task at hand
+        
         self.cam = cv.CaptureFromCAM(cameranumber)
-        self.update() # setup frame
+        self.update() # setup self.frame
         
-        self.size = cv.GetSize(self.frame)
-        self.center = tuple(x/2 for x in self.size)
+        self.shape = cv.GetSize(self.frame)
+        self.center = tuple(x/2 for x in self.shape)
         self.currentcircles = deque(maxlen=40)
-        
-        self.color = cv.RGB(100, 130, 255)
-        self.font = cv.InitFont(cv2.FONT_HERSHEY_DUPLEX, 0.1, 0.5, 
-                                shear=0, thickness=1, lineType=8)
-        self.font2 = cv.InitFont(cv2.FONT_HERSHEY_DUPLEX, 0.1, 0.5, 
-                                shear=0, thickness=3, lineType=8)
-        
-        
+
+    def getfont(self, **kwargs):
+        '''get a font with some nice defaults'''
+        fontsize = kwargs.pop('fontsize', 0.5)
+        outline = kwargs.pop('outline', False)
+        params = dict(font=CV_FONT_HERSHEY_PLAIN,
+                      hscale=fontsize*0.9, vscale=fontsize,
+                      shear=0, thickness=1, 
+                      lineType=cv2.CV_AA)
+        params.update(kwargs)
+        if outline:
+            params['thickess'] += 2
+        return cv.InitFont(**params)
     
-    def write(self, msg, loc):
+    def getcolor(self, red=0, green=0, blue=0):
+        '''wrapper around cv.RGB'''
+        return cv.RGB(red,green,blue)
+        
+    def getdefaultcolor(self):
+        '''A nice steel blue'''
+        return self.color(100,130,255)
+    
+    def write(self, msg, loc, lineheight=20, color=None, outline=True):
+        '''Write a string(msg) to the screen. This handles new lines like 
+        butter, and defaults to outlineing the text'''
         for i,line in enumerate(msg.splitlines()):
-            l = (loc[0], loc[1]+i*20)
-            cv.PutText(self.frame, line, l, self.font2, 0)
-            cv.PutText(self.frame, line, l, self.font, self.color)
+            l = (loc[0], loc[1]+i*lineheight)
+            if outline:
+                cv.PutText(self.frame, line, l, self.getfont(outline), 0)
+            cv.PutText(self.frame, line, l, self.getfont(outline), self.color)
+    
+    def displaystatus(self, text):
+        '''A wrapper that handles displaying of the current status'''
+        self.write(text, (20,20))
     
     def update(self, frame=None):
+        '''Update the current frame in the buffer. If you pass in a frame object
+        it will use it.'''
         if frame:
             self.frame = frame
         else:
             self.frame = cv.QueryFrame(self.cam)
     
     def addoverlay(self):
-        # cv.PutText(self.frame, "orient.py", (10,self.size[1]-10), self.font, self.color)
         self.write(__DOC__, (10,20))
         self.write('orient.py', (10,self.size[1]-10) )
         cv.Line(self.frame, (0,self.center[1]), (self.size[0],self.center[1]), self.color)
         cv.Line(self.frame, (self.center[0],0), (self.center[0],self.size[1]), self.color)
         cv.Circle(self.frame, self.center, 100, self.color)
-        
+    
+    def addtrackbar(self):
+        '''Add a trackbar?!'''
         # value = 0
         # count = 100
         # def onChange(x,*args):
         #     print x
         # cv.CreateTrackbar('test','Window', value, count, onChange)
     
-    def display(self, text):
-        # cv.PutText(self.frame, text, (20,20), self.font, self.color)
-        self.write(text, (20,20))
     
     def show(self):
+        '''Display the current frame'''
         cv.ShowImage("Window", self.frame)
     
     def interact(self):
+        '''Handle all of the fancy key presses'''
         c = (cv.WaitKey(25) & 0xFF)
         
         CHARMAP = {
@@ -296,24 +173,31 @@ class Camera(object):
         if c in CHARMAP:
             self.status = CHARMAP[c]
         elif c != 255:
-            print repr(c)
+            print 'Key not recognized: {} [{}]'.format(repr(c), ord(c))
     
-    
+    # Line measuring functions
     
     def setupmeasure(self, color='red'):
+        '''Setup the line measureing state.
+        self.index -- which color should we focus on.
+        self.nsigma -- how many sigma above background to fit
+        self.zero  -- The vertical zero position of the laser line.'''
         self.index = ['blue','green','red'].index(color)
         self.nsigma = 1.0
-        self.zero = 0 
-        self.zero = self.measure()
-        
+        self.zero = 0
+    
+    def setzero(self, **kwargs):
+        '''Set the zero location of the line location.'''
+        self.zero = self.measure(**kwargs)
     
     def measure(self, delta=200):
         '''return the location of the point in pixels'''
-        # cv.CvtColor(self.frame, self.frame, cv.CV_BGR2HLS)
+        # DEBUG!! invert image so that a dark green line looks like a 
+        #         bright red line!
         cv.Not(self.frame, self.frame)
         
         img = np.array(cv.GetMat(self.frame))[:,:,self.index]
-        out = []
+        out = [] # store the found locations of the line location
         for i,im in vslice(img, delta):
             imavg = np.mean(im, axis=1)
             ex,ey,cut = findextreme(imavg, self.nsigma)
@@ -322,17 +206,17 @@ class Camera(object):
                 out.append(p['mean'].value)
             except KeyboardInterrupt as e:
                 print 'User canceled operation'
-                # sys.exit()
+                return -1.0
             except Exception as e:
                 print 'Failed to fit: {} {}'.format(i,e)
                 # raise
         return np.mean(out)
     
     
+    # Circle finding procedures
+    
     def circle(self):
-        if self.status != 'circle':
-            return
-        # get some circles
+        '''Determine the location of a circle in the frame.'''
         frame = np.array(cv.GetMat(self.frame))
         img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         # img = cv2.medianBlur(img, 5)
@@ -353,7 +237,7 @@ class Camera(object):
                 cv2.circle(frame,(x,y),r,(255,255,255))
                 cv2.circle(frame,(x,y),2,(255,255,255),2)
             
-            # add the most central one
+            # add the most central one is the good one
             tmp = self.centralitem(circles)
             if tmp is not None:
                 cv2.circle(frame,(tmp[0],tmp[1]),tmp[2],(0,255,0),2)
@@ -361,10 +245,13 @@ class Camera(object):
         except Exception as e:
             print e
         
-        frame = self.plot_currentcircle(frame)
+        frame = self.plotcurrentcircle(frame)
         self.frame = cv.fromarray(frame)
     
-    def plot_currentcircle(self, frame):
+    def plotcurrentcircle(self, frame):
+        '''Plot the most central circle -- this can fail due to
+        not having any points so wrap it and ignore its failings as 
+        a program.  It is ok program I still enjoy your work.'''
         try:
             # plot the average one
             x,y,r = map(np.mean, zip(*self.currentcircles))
@@ -379,6 +266,7 @@ class Camera(object):
         return frame
 
     def centralitem(self, items):
+        '''Get the most central item from a list of (x,y,...) items'''
         mindist = 1e4
         good = None
         for item in items:
@@ -389,13 +277,24 @@ class Camera(object):
         return good
 
 
+
+
+
+
 class Controller(object):
     def __init__(self, serial):
+        '''Controller for the serial -> grbl device. Generally this assumes
+        that the machine is in incremental mode.'''
         self.serial = serial
         self.serial.run('G20G91 (inch, incremental)')
         self.movelen = 0.1 #inch
     
     def run(self, cmd):
+        '''Run a gcode-command, or a specific keyword.  (e.g. forward will move
+        the machine forward in the x direction by self.movelen.)  This also 
+        handles increasing and decreasing the self.movelength command. 
+        If this does not consume the command it is returned. Or it 
+        returns a nice status message of what happened.'''
         DELTA = 0.001
         CMD = dict(
             forward='X',
@@ -427,6 +326,8 @@ class Controller(object):
             return cmd
     
     def setposition(self, cmd):
+        '''This consumes the commands that are related to figuring out
+        the location of a set of locations (corners of a board).'''
         POS = ['set', 'lowerleft','lowerright','upperleft','upperright']
         if cmd in pos:
             return 'Set: {}'.format(cmd)
@@ -434,13 +335,19 @@ class Controller(object):
             return cmd
     
     def position(self):
-        '''TODO convert this to some nice text'''
+        ''' get the current state of the machine and then return a processed
+        bit of text for simple consuming by other programs.
+        TODO: debug what the machine actually produces.
+        '''
         status = self.serial.run('?')
         return 'position: {}'.format(status)
     
     
+    # x+y scan related procedures
     
     def setupscan(self):
+        '''Get the variables from the command line.
+        e.g. p orient.py scan [width] [height] [number of pts]'''
         self.x = 0
         self.y = 0
         try:
@@ -459,15 +366,15 @@ class Controller(object):
             for y in np.linspace(0, self.height, self.npts):
                 self.run('G0 X{:0.3f} Y{:0.2f}'.format(x,y))
                 yield x,y
-        
-        
 
 
 
 
 
-def main():
-    
+
+def findcircles():
+    '''Find the current circle closest to the center of the screen.
+    this will show all circles on the screen.'''
     with Communicate('', None, debug=True) as serial:
         camera = Camera()
         controller = Controller(serial)
@@ -488,6 +395,8 @@ def main():
             # 
             camera.addoverlay()
             camera.show()
+
+
 
 
 
@@ -617,8 +526,8 @@ def test(color='green', delta=20):
     filename = directory + 'debug_green.jpg'
     color='green'
     nsigma=1.5
-
-    filename = './test.jpg'
+    
+    filename = directory+'/test_circ.jpg'
     color='green'
     nsigma=0.0
     
@@ -696,19 +605,43 @@ def test(color='green', delta=20):
 
 
 def test_circle():
-    frame = cv2.imread('./test.jpg')
+    directory = '/Users/ajmendez/Dropbox/Shared/Design/laser/test/'
+    filename = directory+'/test_circ.jpg'
+    frame = cv2.imread(filename)
+    
     img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # img = cv2.GaussianBlur(img, (0,0), 2.1)
+    
+    
+    tmp = cv2.GaussianBlur(img, (0,0), 5.1)
+    img = cv2.addWeighted(img,3.0,tmp, -2.0, -0.1)
+    
+    # cv2.threshold(img, 120, 0, cv2.THRESH_TOZERO, img)l
+    
+    # img = cv2.GaussianBlur(img, (0,0), 2.1)
+    # cv2.adaptiveThreshold(img, 256, cv2.ADAPTIVE_THRESH_MEAN_C,
+    #                       cv2.THRESH_BINARY_INV, 5, 0, img)
+    # img = cv2.GaussianBlur(img, (0,0), 2.1)
+    # img = cv2.morphologyEx(img, cv2.MORPH_OPEN, (3,3))
+    # img = cv2.morphologyEx(img, cv2.MORPH_OPEN, (5,5))
+    # img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, (3,3))
+    # img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, (5,5))
+    # img = cv2.GaussianBlur(img, (0,0), 5.1)
+    
+    # cv2.imshow('window',img)
+    # cv2.waitKey()
+    
     # img = cv2.medianBlur(img, 5)
-    img = cv2.medianBlur(img, 3)
+    # img = cv2.medianBlur(img, 3)
     # img = cv2.GaussianBlur(img, (0,0), 0.1)
-    # frame = img
+    frame = img
     
     circles = cv2.HoughCircles(img, cv.CV_HOUGH_GRADIENT, 
                                dp=1,  # accumulator res
-                               minDist=20, #min dist to next circle
+                               minDist=40, #min dist to next circle
                                param1=100, # canny param
                                param2=20, # accumulator threshold
-                               minRadius=5,
+                               minRadius=10,
                                maxRadius=20)
     try:
         n = np.shape(circles)
