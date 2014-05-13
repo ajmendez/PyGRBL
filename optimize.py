@@ -18,7 +18,7 @@ Z_DRILL =  -63 # mil [-63] : Mill depth for full drill holes
 
 
 # The Optimize function
-def opt(gfile):
+def opt(gfile, offset=(0.0,0.0), rotate=False):
   '''Optimization core function:
   Reads in gCode ascii file.
   Processes gcode into toolpath list
@@ -36,6 +36,10 @@ def opt(gfile):
   # Take the list and make a toolpath out of it. A toolpath is a list of locations
   # where the bit needs to be moved / milled : [ [x,y,z,t], ...]
   tool = Tool(gcode)
+  tool.offset(offset)
+  if rotate:
+    tool.rotate()
+  
   tool.groupMills()
   puts(colored.blue('Toolpath length: %.2f inches, (mill only: %.2f)'%(tool.length(),tool.millLength())))
   if args.setMillHeight:
@@ -47,6 +51,7 @@ def opt(gfile):
   puts(colored.blue('Starting Optimization:'))
   here = [0.0]*3 # start at the origin
   newMills = []  # accumulate mills here
+  k = 0
   while len(tool.mills) > 0:
     # No Optimization
     # mill = tool.mills.pop(0)
@@ -62,6 +67,12 @@ def opt(gfile):
     # move mills and update location
     newMills.append(mill) 
     here = newMills[-1][-1]
+    
+    k += 1
+    if (k%10) == 0:
+      sys.stdout.write('.')
+      sys.stdout.flush()
+    
   tool.mills.extend(newMills)
   tool.reTool(Z_MOVE)
   tool.uniq()
@@ -86,28 +97,48 @@ EXTRAARGS = dict(ext=dict(args=['--keepMillHeight'],
                           const=False,
                           action='store_const',
                           dest='setMillHeight',
-                          help='''Do not modify the mill height for 3d mills''') )
+                          help='''Do not modify the mill height for 3d mills'''),
+                 ext2=dict(args=['--offsetx'],
+                           default=0,
+                           type=float,
+                           # dest='offsetx',
+                           help='Set x offset length in inches'),
+                 ext3=dict(args=['--offsety'],
+                           default=0,
+                           type=float,
+                           # dest='offsetx',
+                           help='Set y offset length in inches'),
+                ext4=dict(args=['--rotate'],
+                          default=False,
+                          const=False,
+                          action='store_const',
+                          help='rotate by 90'),
+                )
 
 
 
+if __name__ == '__main__':
+  # Initialize the args
+  start = datetime.now()
+  args = argv.arg(description='Python GCode optimizations',
+                  otherOptions=EXTRAARGS, # Install some nice things
+                  getFile=True, # get gcode to process
+                  getMultiFiles=True, # accept any number of files
+                  getDevice=False)
 
-# Initialize the args
-start = datetime.now()
-args = argv.arg(description='Python GCode optimizations',
-                otherOptions=EXTRAARGS, # Install some nice things
-                getFile=True, # get gcode to process
-                getMultiFiles=True, # accept any number of files
-                getDevice=False)
+  # print vars(args)
+  # import sys
+  # sys.exit()
 
-# optimize each file in the list
-for gfile in args.gcode:
-  # only process things not processed before.
-  # c = re.match(r'(?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap)', gfile.name)
-  c = re.match(r'(.+)((?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap))', gfile.name)
-  if c: # either a drill.tap or etch.tap file
-    opt(gfile)
+  # optimize each file in the list
+  for gfile in args.gcode:
+    # only process things not processed before.
+    # c = re.match(r'(?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap)', gfile.name)
+    c = re.match(r'(.+)((?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap))', gfile.name)
+    if c: # either a drill.tap or etch.tap file
+      opt(gfile, offset=(args.offsetx, args.offsety), rotate=args.rotate)
 
-print '%s finished in %s'%(args.name,deltaTime(start))
+  print '%s finished in %s'%(args.name,deltaTime(start))
 
 
 

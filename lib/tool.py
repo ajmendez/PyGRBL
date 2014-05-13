@@ -160,6 +160,21 @@ class Tool(list):
         # if j == 2 : sys.exit()
     return box
 
+  def offset(self, offset):
+    '''offset the toolpath by some offset=x,y'''
+    for item in self:
+      for i,ax in enumerate(item):
+        if i == 0:
+          item[ax] -= offset[0]
+        if i == 1:
+          item[ax] -= offset[1]
+  
+  def rotate(self):
+    '''rotate by 90'''
+    for item in self:
+      item[0],item[1] = -item[1], item[0]
+    
+  
   # def _badclean(self):
   #   '''A temporary fix to check the bike program'''
   #   loc=[0.0,0.0,0.0]
