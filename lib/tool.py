@@ -177,7 +177,7 @@ class Tool(list):
       # 90 deg
       # item[0],item[1] = -item[1], item[0]
       a = math.cos(rad)*item[0] - math.sin(rad)*item[1]
-      b = math.sin(rad)*item[0] - math.cos(rad)*item[1]
+      b = math.sin(rad)*item[0] + math.cos(rad)*item[1]
       item[0], item[1] = a,b
     
   

@@ -121,9 +121,9 @@ if __name__ == '__main__':
                   getMultiFiles=True, # accept any number of files
                   getDevice=False)
 
-  print vars(args)
-  import sys
-  sys.exit()
+  # print vars(args)
+  # import sys
+  # sys.exit()
 
   # optimize each file in the list
   for gfile in args.gcode:
