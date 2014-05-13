@@ -37,8 +37,7 @@ def opt(gfile, offset=(0.0,0.0), rotate=False):
   # where the bit needs to be moved / milled : [ [x,y,z,t], ...]
   tool = Tool(gcode)
   tool.offset(offset)
-  if rotate:
-    tool.rotate()
+  tool.rotate(rotate)
   
   tool.groupMills()
   puts(colored.blue('Toolpath length: %.2f inches, (mill only: %.2f)'%(tool.length(),tool.millLength())))
@@ -104,15 +103,11 @@ EXTRAARGS = dict(ext=dict(args=['--keepMillHeight'],
                            # dest='offsetx',
                            help='Set x offset length in inches'),
                  ext3=dict(args=['--offsety'],
-                           default=0,
-                           type=float,
-                           # dest='offsetx',
+                           default=0.0, type=float,
                            help='Set y offset length in inches'),
                 ext4=dict(args=['--rotate'],
-                          default=False,
-                          const=True,
-                          action='store_const',
-                          help='rotate by 90'),
+                          default=0.0, type=float,
+                          help='Rotate about the origin by some angle. Rotates after offset'),
                 )
 
 
@@ -126,9 +121,9 @@ if __name__ == '__main__':
                   getMultiFiles=True, # accept any number of files
                   getDevice=False)
 
-  # print vars(args)
-  # import sys
-  # sys.exit()
+  print vars(args)
+  import sys
+  sys.exit()
 
   # optimize each file in the list
   for gfile in args.gcode:

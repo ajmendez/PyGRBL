@@ -6,6 +6,7 @@ from pprint import pprint
 from string import Template
 from copy import deepcopy
 
+
 from clint.textui import colored, puts, indent, progress
 from util import error, distance, IndexDict
 from mill import Mill
@@ -169,14 +170,15 @@ class Tool(list):
         if i == 1:
           item[ax] -= offset[1]
   
-  def rotate(self):
-    '''rotate by 90'''
+  def rotate(self, angle):
+    '''rotate by some angle'''
+    rad = math.radians(angle)
     for item in self:
-      # for i,ax in enumerate(item):
-      # from pysurvey import util
-      # util.setup_stop()
-      # raise ValueError()
-      item[0],item[1] = -item[1], item[0]
+      # 90 deg
+      # item[0],item[1] = -item[1], item[0]
+      a = math.cos(rad)*item[0] - math.sin(rad)*item[1]
+      b = math.sin(rad)*item[0] - math.cos(rad)*item[1]
+      item[0], item[1] = a,b
     
   
   # def _badclean(self):
