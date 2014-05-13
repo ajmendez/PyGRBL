@@ -172,6 +172,10 @@ class Tool(list):
   def rotate(self):
     '''rotate by 90'''
     for item in self:
+      # for i,ax in enumerate(item):
+      # from pysurvey import util
+      # util.setup_stop()
+      # raise ValueError()
       item[0],item[1] = -item[1], item[0]
     
   

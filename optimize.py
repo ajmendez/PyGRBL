@@ -110,7 +110,7 @@ EXTRAARGS = dict(ext=dict(args=['--keepMillHeight'],
                            help='Set y offset length in inches'),
                 ext4=dict(args=['--rotate'],
                           default=False,
-                          const=False,
+                          const=True,
                           action='store_const',
                           help='rotate by 90'),
                 )
