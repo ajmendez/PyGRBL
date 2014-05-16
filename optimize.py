@@ -18,7 +18,7 @@ Z_DRILL =  -63 # mil [-63] : Mill depth for full drill holes
 
 
 # The Optimize function
-def opt(gfile, offset=(0.0,0.0), rotate=False):
+def opt(gfile, offset=(0.0,0.0,0.0), rotate=False):
   '''Optimization core function:
   Reads in gCode ascii file.
   Processes gcode into toolpath list
@@ -97,15 +97,27 @@ EXTRAARGS = dict(ext=dict(args=['--keepMillHeight'],
                           action='store_const',
                           dest='setMillHeight',
                           help='''Do not modify the mill height for 3d mills'''),
+                 ext1 = dict(args=['--zmove'],
+                          default=0.0, type=float,
+                          help='Move Z-height in mills [%s mills]'%Z_MOVE),
+                 ext1a = dict(args=['--zmill'],
+                          default=0.0, type=float,
+                          help='Mill Z-height in mills [%s mills]'%Z_MILL),
+                 ext1b = dict(args=['--zdrill'],
+                          default=0.0, type=float,
+                          help='Drill Z-height in mills [%s mills]'%Z_DRILL),
+                
                  ext2=dict(args=['--offsetx'],
                            default=0,
                            type=float,
-                           # dest='offsetx',
                            help='Set x offset length in inches'),
                  ext3=dict(args=['--offsety'],
                            default=0.0, type=float,
                            help='Set y offset length in inches'),
-                ext4=dict(args=['--rotate'],
+                 ext4=dict(args=['--offsetz'],
+                           default=0.0, type=float,
+                           help='Set z offset length in inches'),
+                ext5=dict(args=['--rotate'],
                           default=0.0, type=float,
                           help='Rotate about the origin by some angle. Rotates after offset'),
                 )
@@ -120,7 +132,13 @@ if __name__ == '__main__':
                   getFile=True, # get gcode to process
                   getMultiFiles=True, # accept any number of files
                   getDevice=False)
-
+  
+  if args.zmove != 0:
+      Z_MOVE = args.zmove
+  if args.zdrill != 0:
+      Z_DRILL = args.zdrill
+  if args.zmill != 0:
+      Z_MILL = args.zmill
   # print vars(args)
   # import sys
   # sys.exit()
@@ -131,7 +149,7 @@ if __name__ == '__main__':
     # c = re.match(r'(?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap)', gfile.name)
     c = re.match(r'(.+)((?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap))', gfile.name)
     if c: # either a drill.tap or etch.tap file
-      opt(gfile, offset=(args.offsetx, args.offsety), rotate=args.rotate)
+      opt(gfile, offset=(args.offsetx, args.offsety, args.offsetz), rotate=args.rotate)
 
   print '%s finished in %s'%(args.name,deltaTime(start))
 

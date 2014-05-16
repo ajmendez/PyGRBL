@@ -9,8 +9,8 @@ from lib import argv
 from lib.communicate import Communicate
 from lib.util import deltaTime
 
-from pysurvey import util
-util.setup_stop()
+# from pysurvey import util
+# util.setup_stop()
 
 
 RX_BUFFER_SIZE = 128
@@ -37,8 +37,8 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
     # Strip comments/spaces/new line, capitalize, and add line ending
     l = re.sub('\s|\(.*?\)','',line.strip()).upper()+'\n'  
 
-    if 'M' in l:
-      continue
+    # if 'M' in l:
+    #   continue
 
     
     # if this was a comment or blank line just go to the next one

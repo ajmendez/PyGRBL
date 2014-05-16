@@ -162,13 +162,17 @@ class Tool(list):
     return box
 
   def offset(self, offset):
-    '''offset the toolpath by some offset=x,y'''
+    '''offset the toolpath by some offset=x,y,z
+    this needs to be cleaned up'''
     for item in self:
       for i,ax in enumerate(item):
         if i == 0:
           item[ax] -= offset[0]
-        if i == 1:
+        elif i == 1:
           item[ax] -= offset[1]
+        elif i == 2:
+          item[ax] -= offset[2]
+          
   
   def rotate(self, angle):
     '''rotate by some angle'''
