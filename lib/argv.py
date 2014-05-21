@@ -56,10 +56,14 @@ def arg(description=None, getDevice=True,
   
   # For any specalized options lets have a general import method
   if otherOptions:
-    for item in otherOptions:
-      args = otherOptions[item].pop('args')
-      parser.add_argument(*args, **otherOptions[item])
-  
+    if isinstance(otherOptions,(dict)):
+      for item in otherOptions:
+        args = otherOptions[item].pop('args')
+        parser.add_argument(*args, **otherOptions[item])
+    else:
+      for option in otherOptions:
+        args = option.pop('args')
+        parser.add_argument(*args, **option)
 
   args = parser.parse_args()
   

@@ -83,6 +83,7 @@ class Camera(object):
         self.shape = cv.GetSize(self.frame)
         self.center = tuple(x/2 for x in self.shape)
         self.currentcircles = deque(maxlen=40)
+        self.points = deque(maxlen=100)
 
     def getfont(self, **kwargs):
         '''get a font with some nice defaults'''
@@ -103,7 +104,7 @@ class Camera(object):
         
     def getdefaultcolor(self):
         '''A nice steel blue'''
-        return self.color(100,130,255)
+        return self.getcolor(100,130,255)
     
     def write(self, msg, loc, lineheight=20, color=None, outline=True):
         '''Write a string(msg) to the screen. This handles new lines like 
@@ -190,11 +191,12 @@ class Camera(object):
         '''Set the zero location of the line location.'''
         self.zero = self.measure(**kwargs)
     
-    def measure(self, delta=200):
+    def measure(self, delta=50, invert=False, getall=True, quiet=False):
         '''return the location of the point in pixels'''
         # DEBUG!! invert image so that a dark green line looks like a 
         #         bright red line!
-        cv.Not(self.frame, self.frame)
+        if invert:
+            cv.Not(self.frame, self.frame)
         
         img = np.array(cv.GetMat(self.frame))[:,:,self.index]
         out = [] # store the found locations of the line location
@@ -203,14 +205,56 @@ class Camera(object):
             ex,ey,cut = findextreme(imavg, self.nsigma)
             try:
                 p,x,g = fitgaussian(ex,ey,cut)
-                out.append(p['mean'].value)
+                out.append([i,p['mean'].value])
             except KeyboardInterrupt as e:
                 print 'User canceled operation'
                 return -1.0
             except Exception as e:
-                print 'Failed to fit: {} {}'.format(i,e)
+                if not quiet:
+                    print 'Failed to fit: {} {}'.format(i,e)
                 # raise
-        return np.mean(out)
+        try:
+            x,y = zip(*out)
+        except:
+            x,y = [0],[0]
+        if getall:
+            return x,y
+        else:
+            return np.mean(y)
+    
+    def plot(self, xx, yy, pos=None, size=None):
+        
+        # show the mean
+        x = np.mean(xx)
+        y = np.mean(yy)
+        cv.Circle(self.frame, (int(x),int(y)), 5, self.getdefaultcolor())
+        
+        # rolling plot of the mean
+        # self.points.append(int(yy))
+        # for x,y in enumerate(self.points):
+        #     cv.Circle(self.frame, (x,y), 2, self.getcolor(red=1))
+        
+        # show all points
+        for x,y in zip(xx,yy):
+            cv.Circle(self.frame, (int(x),int(y)), 2, self.getdefaultcolor())
+        
+        # show all the rolling points
+        self.points.append([xx,yy])
+        for i,(xx,yy) in enumerate(self.points):
+            for x,y in zip(xx,yy):
+                cv.Circle(self.frame, (int(i+x-len(self.points)/2.0),int(y)), 1, self.getcolor(red=0.5))
+        
+        
+        
+        # if pos is None: pos = 0,0
+        # if size is None: size = 50,200
+        # self.points.append(z)
+        # for x in self.points:
+        #     try:
+        #         cv.Circle(self.frame, (0, int(x)), 10, self.getdefaultcolor())
+        #     except:
+        #         print x
+        
     
     
     # Circle finding procedures
@@ -435,6 +479,20 @@ def scan():
         pylab.ioff()
         pylab.show()
             
+
+
+def roll():
+    camera = Camera()
+    camera.setupmeasure()
+    while True:
+        camera.update()
+        camera.interact()
+        x,y = camera.measure(getall=True, quiet=True)
+        camera.plot(x,y)
+        if camera.status == 'quit':
+            break
+        camera.show()
+        
 
 
 
@@ -697,5 +755,7 @@ if __name__ == "__main__":
         test_circle()
     elif 'scan' in sys.argv:
         scan()
+    elif 'roll' in sys.argv:
+        roll()
     else:
         main()
