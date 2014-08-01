@@ -5,7 +5,7 @@ from lib.communicate import Communicate
 __DOC__ = 'Setup homing for the machine'
 
 SETUP = '''(Setting up homing)
-$16=1 (homing on -- requires reset)
+$17=1 (homing on -- requires reset)
 $H
 $N0 = (setup Staring block)
 G28.1 (Soft abs home position)
@@ -18,9 +18,13 @@ G28 Z0.3 (rapid to 0.3 and then go home)
 '''
 
 RESET = '''(Turning off Homing)
-$16=0 (Homing off -- requires reset)
+$16=0 (Hard Limits off )
+$17=0 (Homing off -- requires reset)
+$N1= (clear out)
 G28
-G10 L2 P1 X0 Y0 Z0 (Reset G55)
+G10 L2 P1 X0 Y0 Z0 (Reset G54)
+G10 L2 P2 X0 Y0 Z0 (Reset G54)
+
 '''
 
 

@@ -4,7 +4,7 @@
 
 # What we are going with.
 xmax = 3.75         # inch : max x dimension of milled out area
-ymax = 5.30         # inch : max y dimension of milled out area
+ymax = 5.35         # inch : max y dimension of milled out area
 bitsize = (1/8.)/2. # inch : Radius of mill bit.
 milldepth = -0.130  # inch : milling depth
 
