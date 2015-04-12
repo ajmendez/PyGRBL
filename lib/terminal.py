@@ -17,6 +17,10 @@ class Terminal():
     '''Is there data ready to process'''
     return select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
   
+  def waitForData(self):
+    '''Is there data ready to process'''
+    return select.select([sys.stdin], [], []) == ([sys.stdin], [], [])
+  
   def echo(self):
     '''echo characters to screen'''
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.oldterm)

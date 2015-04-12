@@ -113,7 +113,7 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
   print '<waiting for key>'
   with Terminal() as terminal:
     while True:
-      if terminal.isData():
+      if terminal.waitForData():
         c = terminal.getch()
         terminal.wait()
         if   c in   QUIT: sys.exit() # Quit the program
