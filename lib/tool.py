@@ -243,6 +243,8 @@ class Tool(list):
         if len(mill) > 0:
           self.mills.append(mill)
           mill = Mill() # ready for more mills
+    # and get the last one!
+    if len(mill) > 0: self.mills.append(mill)
   
   
   def uniqMills(self):
