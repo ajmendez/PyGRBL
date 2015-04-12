@@ -91,7 +91,7 @@ Current Nudge length: %.3f inch [Default: 20mil].
   value = re.sub(r'\s','',userValue.strip()) # Remove Whitespace
   
   # match to units and values
-  c = re.match(r'(?P<num>\d+\.?\d+)(?P<unit>'+'|'.join(units)+')', value, re.IGNORECASE)
+  c = re.match(r'(?P<num>(?:\d*\.)?\d+)(?P<unit>'+'|'.join(units)+')', value, re.IGNORECASE)
   
   # if the user was bad just go back
   if not c or not c.group('unit') in units:
