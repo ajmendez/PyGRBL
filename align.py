@@ -9,6 +9,7 @@ from lib.terminal import Terminal
 
 QUIT = ['q','Q']
 UPDATE =['u','U']
+TWEAKL =['+','-']
 MOTOR =['m','M']
 UP = ['\x1b[B']
 DOWN = ['\x1b[A']
@@ -30,6 +31,7 @@ HELP = '''\
 Board Alignment Keys:
 q/Q        : Quit
 u/U        : Update moveLength -- Amount to nudge 
++/-        : Increase/Decrease moveLength by a factor of 2 (round to nearest mil)
 m/M        : Toggle spindle
 Arrow Keys : Move in X [Forward/Back]
                      Y [Left/Right]
@@ -101,6 +103,17 @@ Current Nudge length: %.3f inch [Default: 20mil].
   puts(colored.blue(' > moveLength is now: %.3f inch\n'%newLength))
   return newLength
 
+def tweakLength(origLength, key):
+  newLength = origLength
+  if key == '+':
+    newLength *= 2
+  else:
+    newLength /= 2
+    # round to the nearest mil because we're outputting that resolution with relative addressing
+    # if we try to use fractional mils, we'll end up with the position we tell the user not matching where the machine actually is
+    newLength = round(newLength*1000)/1000
+  puts(colored.blue(' > moveLength is now: %.3f inch\n'%newLength))
+  return newLength
 
 
 
@@ -128,6 +141,7 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
         terminal.wait()
         if   c in   QUIT: sys.exit() # Quit the program
         elif c in UPDATE: moveLength = update()
+        elif c in TWEAKL: moveLength = tweakLength(moveLength, c)
         elif c in  MOTOR: spindleState = toggleSpindle(spindleState)
         elif c in     UP: move('X-')
         elif c in   DOWN: move('X+')
