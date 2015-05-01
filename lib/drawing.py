@@ -84,7 +84,6 @@ class Drawing(object):
 
       # if we are doing something different or we are done:
       if cmd != last_cmd or last_z != z or i == len(tool)-1:
-        if i == len(tool)-1: last_z = z
         if last_cmd == 0 or last_z >= 0:
           # draw thin grey lines for movement
           self.ps += "0.1 setlinewidth 0.5 0.5 0.5 setrgbcolor stroke\n"
