@@ -9,6 +9,8 @@ from lib.terminal import Terminal
 
 QUIT = ['q','Q']
 UPDATE =['u','U']
+TWEAKL =['+','-']
+MOTOR =['m','M']
 UP = ['\x1b[B']
 DOWN = ['\x1b[A']
 RIGHT = ['\x1b[D']
@@ -29,6 +31,8 @@ HELP = '''\
 Board Alignment Keys:
 q/Q        : Quit
 u/U        : Update moveLength -- Amount to nudge 
++/-        : Increase/Decrease moveLength by a factor of 2 (round to nearest mil)
+m/M        : Toggle spindle
 Arrow Keys : Move in X [Forward/Back]
                      Y [Left/Right]
 a/A / z/Z  : Move in Z [Raise/Lower]
@@ -36,7 +40,7 @@ a/A / z/Z  : Move in Z [Raise/Lower]
 
 moveLength = 0.020 # Inches [0.020] : amount to move use update(), to change
 location = dict(X=0.0, Y=0.0, Z=0.0) # store the current location inches
-
+spindleState = 0;
 
 
 # Some helper functions, scroll down for tasty bits
@@ -59,6 +63,14 @@ def move(direction=''):
   puts(colored.blue('(%s)'%', '.join(['%.3f'%location[k] for k in location])))
   # isAt = ', '.join(['%s=%.3f'%(a,location[a]) for a in location])
   # puts(colored.blue('    Currently at: %s'%isAt))
+
+def toggleSpindle(state):
+  '''Send on/off command for spindle'''
+  if state:
+    serial.run('M05')
+  else:
+    serial.run('M03')
+  return not state
  
 def update():
   '''Update the moveLength for each command'''
@@ -79,7 +91,7 @@ Current Nudge length: %.3f inch [Default: 20mil].
   value = re.sub(r'\s','',userValue.strip()) # Remove Whitespace
   
   # match to units and values
-  c = re.match(r'(?P<num>\d+\.?\d+)(?P<unit>'+'|'.join(units)+')', value, re.IGNORECASE)
+  c = re.match(r'(?P<num>(?:\d*\.)?\d+)(?P<unit>'+'|'.join(units)+')', value, re.IGNORECASE)
   
   # if the user was bad just go back
   if not c or not c.group('unit') in units:
@@ -91,6 +103,17 @@ Current Nudge length: %.3f inch [Default: 20mil].
   puts(colored.blue(' > moveLength is now: %.3f inch\n'%newLength))
   return newLength
 
+def tweakLength(origLength, key):
+  newLength = origLength
+  if key == '+':
+    newLength *= 2
+  else:
+    newLength /= 2
+    # round to the nearest mil because we're outputting that resolution with relative addressing
+    # if we try to use fractional mils, we'll end up with the position we tell the user not matching where the machine actually is
+    newLength = round(newLength*1000)/1000
+  puts(colored.blue(' > moveLength is now: %.3f inch\n'%newLength))
+  return newLength
 
 
 
@@ -113,11 +136,13 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
   print '<waiting for key>'
   with Terminal() as terminal:
     while True:
-      if terminal.isData():
+      if terminal.waitForData():
         c = terminal.getch()
         terminal.wait()
         if   c in   QUIT: sys.exit() # Quit the program
         elif c in UPDATE: moveLength = update()
+        elif c in TWEAKL: moveLength = tweakLength(moveLength, c)
+        elif c in  MOTOR: spindleState = toggleSpindle(spindleState)
         elif c in     UP: move('X-')
         elif c in   DOWN: move('X+')
         elif c in  RIGHT: move('Y-')
