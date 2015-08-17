@@ -57,10 +57,13 @@ def parse(move, getUnits=False, defaultUnit='in'):
   if isinstance(move, str):
     move = [move]
   #does [no unit specified] need escape chars \[  \]?
+  # no because r''
   units = r'(?P<units>in|mil|mm|[NoUnitSpecified]?)' if getUnits else r''
   out = []
   for m in move:
+    # remove all of the white space
     m = re.sub(r'\s','',m).strip()
+    #
     g = re.match(r'(?P<x>-?\d*\.?\d*)\,(?P<y>-?\d*\.?\d*)'+units, m, re.I)
     if not g:
       error('Argument Parse Failed on [%s] failed! Check the arguments'%(m))
@@ -105,6 +108,7 @@ def mod(gfile):
     loc = parse(args.move, getUnits=True) # only one move at a time.
     puts(colored.blue('Moving!\n    (0,0) -> (%.3f,%.3f)'%(loc[0],loc[1])))
     tool = Tool()
+    # is the addIndex atribut even used any longer?
     tool.build(gcode, addIndex=True)
     tool.move(loc) # ok well this should work
     gcode.update(tool)
@@ -117,6 +121,7 @@ def mod(gfile):
       puts(colored.blue('    (0,0) -> (%.3f,%.3f)'%(loc[0],loc[1])))
       gc = gcode.copy()
       tool = Tool()
+      # is the addIndex atribut even used any longer?
       tool.build(gc, addIndex=True)
       tool.move(loc)
       gc.update(tool)

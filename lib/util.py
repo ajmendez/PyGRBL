@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # util.py : some nice things
 # [2012.07.30] - Mendez
+# INCLUDING the defintion of INDEXDICT
+# [2015.08.15] - Erickstad
 import sys
 from datetime import datetime
 from math import sqrt
@@ -33,7 +35,7 @@ def deltaTime(start):
         if delta > 1: noun +='s'
         out.append('%d %s'%(delta,noun))
         seconds -= factor*(delta)
-  
+
   return ', '.join(out)
 
 
@@ -45,7 +47,7 @@ def distance(A,B):
   return sqrt(sum([pow(alpha-beta,2) for alpha,beta in zip(a,b)]))
 
 
-def uniqify(seq, idfun=None): 
+def uniqify(seq, idfun=None):
    '''order preserving uniq function'''
    if idfun is None:
        def idfun(x): return x
@@ -94,11 +96,14 @@ class IndexDict(dict):
   ref = {0:'x',1:'y',2:'z'}
   full = {3:'cmd',4:'index',5:'i',6:'j'}
   full.update(ref)
+
   def __init__(self, *args, **kwargs):
     # self._setname(name)
     # self.name = name
     dict.__init__(self, *args, **kwargs)
+    # get the name enrty from the dicty into a dot name member
     if 'name' in self: self._setname(self['name'])
+    #here is the finction for doing the setting of self.name
   def _setname(self,name=None):
     ''' Set the name to be something'''
     if name is not None:
@@ -148,7 +153,7 @@ class IndexDict(dict):
       return '%s:(x=% .3f, y=% .3f, i=% .3f, j=% .3f)'%(self.name, self[0],self[1],self[5],self[6])
     else:
       return '%s:(% .3f,% .3f,% .3f)'%(self.name, self[0],self[1],self[2])
-  
+
   def toGcode(self):
     ''' attempts to convert '''
     if self.cmd == 2:
@@ -162,6 +167,7 @@ class IndexDict(dict):
   def __iter__(self):
     self._current = 0
     return self
+
   def next(self):
     if self._current > len(self.ref.keys())-1:
       raise StopIteration
@@ -172,11 +178,13 @@ class IndexDict(dict):
   # sometimes we want everything
   def allkeys(self):
     return dict.keys(self)
+
   def allvalues(self):
     return dict.values(self)
 
   def keys(self):
     return sorted([self.ref[k] for k in self.ref])
+
   def values(self):
     return [self.get(k) for k in self.keys()]
 
@@ -223,7 +231,3 @@ if __name__ == '__main__':
   e = IndexDict(d)
   print d
   print e
-
-
-
-

@@ -7,55 +7,107 @@
 
 
 #imports
+import os, re, sys
 from numpy import arange
+# use argv in order to have options when using z correct as main function
 from lib import argv
-from lib.gparse import gparse
+from lib.util import deltaTime
+from datetime import datetime
+
+#from lib.gparse import gparse
+from lib.gcode import GCode
+from lib.tool import Tool
 from lib.grbl_status import GRBL_status
 from lib.communicate import Communicate
+from lib.correction_surface import CorrectionSurface
 from clint.textui import puts, colored
 import time, readline
 import numpy as np
 import re
 
+FILEENDING = '_mod' # file ending for optimized file.
 
 
-def Load_Correction_Surface(surface_file_name = 'probe_test.out' ):
+EXTRAARGS = dict(ext=dict(args=['-z','--zsurface'],
+                          default='probe_test.out',
+                          const='probe_test.out',
+                          action='store_const',
+                          dest='z_surf',
+                          help='''Specify for outputing an eps file rather than a pdf.''') )
 
-    #initialize and load the correction surface
-    Surface_Data = []
-    Surface_Data = np.loadtxt(surface_file_name, delimiter=',', comments = '#')
-    correction_surface.array = Surface_Data
-    #display the dataset to be used
-    puts(colored.yellow('Surface Z Data Matrix'))
-    print Surface_Data
 
-    probe_data_file = open(surface_file_name)
+def zcorrect_file(gfile,surface_file_name = 'probe_test.out'):
 
-    #probe_data = probe_data_file.read()
+    # Load the correction surface
+    correction_surface = CorrectionSurface(surface_file_name)
 
-    # retrieve the X and Y step sizes that scale the correction surface
-    for line in probe_data_file:
-        line = line.strip()
+    # keep track of time
+    start = datetime.now()
 
-        if re.search('#', line,flags = re.IGNORECASE):
-            puts(colored.green('extracting scale data from file header'))
-            puts(colored.green( line))
-            if re.search(' X_STEP:', line,flags = re.IGNORECASE):
-                #X_STEP:,0.5000
-                X_STEP_INFO = re.findall('X_STEP:,\d*\.\d*,', line, flags = re.IGNORECASE)[0]
-                if X_STEP_INFO:
-                    X_STEP = float(X_STEP_INFO.split(',')[1])
-                    puts(colored.yellow( 'x step size: {:.4f}'.format(X_STEP)))
-                    correction_surface.x_step = X_STEP
-            else:
-                puts(colored.red( 'x step size: not found!'))
-            if re.search(' Y_STEP:', line,flags = re.IGNORECASE):
-                #X_STEP:,0.5000
-                Y_STEP_INFO = re.findall('Y_STEP:,\d*\.\d*,', line, flags = re.IGNORECASE)[0]
-                if Y_STEP_INFO:
-                    Y_STEP = float(Y_STEP_INFO.split(',')[1])
-                    puts(colored.yellow( 'Y step size: {:.4f}'.format(Y_STEP)))
-                    correction_surface.Y_step = Y_STEP
-            else:
-                puts(colored.red( 'Y step size: not found!'))
-    return correction_surface
+    name = gfile if isinstance(gfile,str) else gfile.name
+    puts(colored.blue('Z correcting the file: %s\n Started: %s'%(name,datetime.now())))
+
+    # Load the gcode.
+    gcode = GCode(gfile)
+    #parse the Gcode
+    gcode.parseAll()
+
+    # start an empty list
+    #out = []
+
+    # need to get rid of use of 'loc'
+    # loc = parse(args.move, getUnits=True) # only one move at a time.
+    # puts(colored.blue('Moving!\n    (0,0) -> (%.3f,%.3f)'%(loc[0],loc[1])))
+
+    # create a tool object (toolpath object)
+    tool = Tool()
+    # load the gcode into the tool object
+    tool.build(gcode)
+    # adjust the z position at each point by the given amount
+    tool.zcorrect(correction_surface)
+    # load the changes back into the gcode object
+    gcode.update(tool)
+    # append the modified g code to the empty list called out
+    #out.append([gcode])
+    out = gcode
+    # convert gcode to text format
+    #output = ''.join([o.getGcode(tag=args.name) for o in out])
+    output = ''.join([out.getGcode()])
+    # get an output file name
+    outfile = FILEENDING.join(os.path.splitext(gfile))
+    print "outfile is:"
+    print outfile
+    # tell the user
+    puts(colored.green('Writing: %s'%outfile))
+    # write to file
+    f = open(outfile,'w')
+    f.write(output)
+    '''
+    with open(outfile,'w') as f:
+        f.write(output)
+    '''
+    # how long did this take?
+    puts(colored.green('Time to completion: %s'%(deltaTime(start))))
+    print
+
+
+if __name__ == '__main__':
+    start = datetime.now()
+
+    args = argv.arg(description='PyGRBL gcode imaging tool',
+                    getFile=True, # get gcode to process
+                    getMultiFiles=False, # accept any number of files
+                    otherOptions=EXTRAARGS, # "Install some nice things" very descriptive!!!
+                    getDevice=False) # We dont need a device
+
+
+    # optimize each file in the list
+    for gfile in args.gcode:
+        # only process things not processed before.
+        # c = re.match(r'(?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap)', gfile.name)
+        c = re.match(r'(.+)(\.tap)', gfile)
+        # c = True # HAX and accept everything
+        if c: # either a drill.tap or etch.tap
+            zcorrect_file(gfile) #args=args)
+
+    print '%s finished in %s'%(args.name,deltaTime(start))

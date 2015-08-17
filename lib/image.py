@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # image.py : a nice image library
-# [2012.08.21] - Mendez 
+# [2012.08.21] - Mendez
 import os, re, sys
 from datetime import datetime
 from random import uniform
@@ -22,25 +22,26 @@ def update_path(path, tool, cmd):
   '''update function to simplify below'''
   tmp = [tool.x,tool.y]
 
-  # for arcs we need to know some special bits
+  # for arcs we need to know some special bits (in Mendez speak circa 2013 bits cn refer to any noun)
+  # (in this case he is telling you that arcs used I and J variables to plot thier path)
   if cmd in (2,3):
      tmp.extend([tool['I'],tool['J'],cmd])
 
   # make sure that we only add new points / or if path is empty
-  if len(path) < 1 or tmp != path[-1] : 
+  if len(path) < 1 or tmp != path[-1] :
     path.append(tmp)
 
   return cmd, path
 
 
 class Image(object):
-  def __init__(self, filename=None, 
+  def __init__(self, filename=None,
                gridscale=1.0,
                gridsize=[[0.0,1.0],[0.0,1.0]],
                pagesize=(7.5,4),  # width,height [in]
                embiggen=0.10, # percent to add to size
                pagemargin=0.5):
-    ''' Image Canvas with milling functions. 
+    ''' Image Canvas with milling functions.
     gridscale : [Float] multiplication factor for grid size
     gridsize  : [Inches] The physical space to span. [[xmin,xmax],[ymin,ymax]]
     pagesize  : [inches] Can be (width,height) or 'letter','letter*', 'A3',A4'
@@ -65,7 +66,7 @@ class Image(object):
 
     parter = graph.axis.parter.linear(ticks, labeldists=[1])
     painter = graph.axis.painter.regular(gridattrs=[attr.changelist(gridcolors)],
-                                         # outerticklength=attr.changelist(ticklen), 
+                                         # outerticklength=attr.changelist(ticklen),
                                          innerticklength=attr.changelist(ticklen) )
     x = graph.axis.linear(min=grid[0][0], max=grid[0][1],
                           painter=painter, parter=parter,
@@ -73,7 +74,7 @@ class Image(object):
     y = graph.axis.linear(min=grid[1][0], max=grid[1][1],
                           painter=painter, parter=parter,
                           title='Y [inch]')
-    
+
     print("Ratio: %f"%(delta[0][2]/delta[1][2]))
     self.g = graph.graphxy(x=x, y=y,width=pagesize[0], ratio=delta[0][2]/delta[1][2])
 
@@ -94,8 +95,8 @@ class Image(object):
 
     # bounding box
     self.g.plot(graph.data.points(zip([gridsize[0][j] for j in [0,1,1,0,0]],
-                                      [gridsize[1][j] for j in [0,0,1,1,0]]), x=1, y=2), 
-                [graph.style.line([color.cmyk.YellowOrange, 
+                                      [gridsize[1][j] for j in [0,0,1,1,0]]), x=1, y=2),
+                [graph.style.line([color.cmyk.YellowOrange,
                                    style.linewidth.THICK,
                                    style.linejoin.miter])])
 
@@ -127,7 +128,7 @@ class Image(object):
   def save(self,filename=None, pdf=False):
     if filename is None and self.filename is None: error("nowhere to save")
     fname = filename if self.filename is None else self.filename
-    puts(colored.green('Writing : %s'%fname)) 
+    puts(colored.green('Writing : %s'%fname))
     # self.d.writetofile(fname)
     if '.pdf' in fname:
       self.c.writePDFfile(fname)
@@ -143,7 +144,7 @@ class Image(object):
     self.mill(xarr,yarr, color=color.rgb.green)
 
   def process(self,tool):
-    '''Mill out a toolpath.  groups together mills, moves, and 
+    '''Mill out a toolpath.  groups together mills, moves, and
     drill, and then plots them together'''
     puts(colored.blue('Processing toolpath for drawing:'))
 
@@ -203,7 +204,7 @@ class Image(object):
     # Ok plot everything, lines will not be connected between nulls
     # if len(mil) > 0 : self.mill(zip(*mil)[0], zip(*mil)[1])
     # # if len(arc) > 0 : self.arc(zip(*arc)[0], zip(*arc)[1])
-    # if len(arc) > 0 : 
+    # if len(arc) > 0 :
     #   x,y = self._interpArc(*zip(*arc))
     #   self.arc(x,y)
 
@@ -230,27 +231,27 @@ class Image(object):
     return width
 
    # the invidual plot commands
-  def mill(self,xarr,yarr, 
-            color=color.rgb.blue, 
+  def mill(self,xarr,yarr,
+            color=color.rgb.blue,
             width=0.010): # in inches
     '''Mill an x,y array defaults to red and 10mil paths.'''
     w = self._convertwidth(width)
     self.g.plot(graph.data.points(zip(xarr, yarr), x=1, y=2),
             [graph.style.line([w, color])])
 
-  def move(self,xarr,yarr, 
+  def move(self,xarr,yarr,
             color=color.gray(0.45),
             width=style.linewidth.thin):
     '''Moves the bit around (x,y) defaults to light blue and 1 point ('onepoint'),
     can pass a inch float as well.  '''
     w = self._convertwidth(width)
-    
+
     self.g.plot(graph.data.points(zip(xarr, yarr), x=1, y=2),
             [graph.style.line([w, color])])
 
   def drill(self,x,y,
-            r=0.032, 
-            color=None, 
+            r=0.032,
+            color=None,
             outlinewidth=style.linewidth.thin,
             outlinecolor=color.rgb.blue):
     ''' A nice drill hole cross and defaults to 32mil holes'''
@@ -259,7 +260,7 @@ class Image(object):
                   [graph.style.symbol(graph.style.symbol.circle, size=r*unit.w_inch,
                                       symbolattrs=[deco.stroked([w, outlinecolor])])])
 
-  def arc(self, xarr,yarr, 
+  def arc(self, xarr,yarr,
              color=color.cmyk.Cyan,
              width=0.010):
     '''Make a nice arc'''
@@ -273,7 +274,7 @@ class Image(object):
 
 
     for i in range(1,len(cmd)-1):
-      if cmd[i] is None or cmd[i-1] is None: 
+      if cmd[i] is None or cmd[i-1] is None:
         continue
       print i, xarr[i-1],yarr[i-1]
       print '   ', xarr[i], yarr[i], iarr[i], jarr[i], cmd[i]
@@ -295,7 +296,7 @@ class Image(object):
 
       delta = DELTA_CURVE_IN
       steps = length/delta
-      
+
       for j in arange(0,steps):
         k = j if cmd[i]==2 else steps-j
         x.append( center[0] + radius*cos(angle[0] + ang*float(k)/steps) )
@@ -305,5 +306,3 @@ class Image(object):
       x.append(None)
       y.append(None)
     return x,y
-
-

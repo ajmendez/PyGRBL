@@ -20,17 +20,17 @@ ${gcode}
 (Finished and Moving back to origin)
 ${finish}
 (DONE)'''
+
 INIT='''\
  G20
  G90
  G00 X0.000 Y0.000 Z0.000
  G00 Z0.100'''
+
 FINISH = '''\
  G00 Z0.100
  G00 X0.000 Y0.000
  G00 Z0.000'''
-
-
 
 class GCode(list):
     def __init__(self, gcode, limit=None):
@@ -109,7 +109,7 @@ class GCode(list):
             if m: out['comment'] = m
             for cmd in CMDS:
                 #incorporating the definintion of command inside this loop should make it more flexible
-                command = r''.join(r'(?P<%s>%s(?P<%snum>-?\d*+(?P<%sdecimal>\.?)\d*))?'%(c,c,c,c))
+                command = r''.join(r'(?P<%s>%s(?P<%snum>-?\d+(?P<%sdecimal>\.?)\d*))?'%(cmd,cmd,cmd,cmd))
                 c = re.match(command,l)
                 if c.group(cmd):
                     # either a float if '.' or a int
@@ -124,17 +124,24 @@ class GCode(list):
             #     self.append(out)
 
     def update(self,tool):
-        '''Updates the gcode with a toolpath only does x,y'''
+        '''Updates the gcode from a toolpath. ONLY does x,y'''
         UPDATE = 'xy'
         for x in tool:
             # print len(x)
+            # this conditional suggests that this code is intended only to work with linear moves
+            # if this is the case we may need to generalize it
             if len(x) == 5:
                 # print x
                 for u in UPDATE:
                     if u.upper() in self[x[4]]:
+                        '''The indexdicts of which a tool object is a list'''
+                        '''have x,y,z,cmd = my_index_dict[0:4]'''
+                        '''note that cmd = my_index_dict[3] is the G command number'''
+                        '''note that index = my_index_dict[4] is the index of the G comand in the whole g code sequence'''
+                        # set the g code command dicts x and y entries of the same index as the tool to the same x and y values as in the tool
                         self[x[4]][u.upper()] = x[UPDATE.index(u)]
-                # print self[x[4]]
 
+                # print self[x[4]]
                     # print self[x[4]],
                     # print u.upper(),
                     # print self[x[4]][u.upper()]

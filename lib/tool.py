@@ -1,6 +1,19 @@
 #!/usr/bin/env python
 # tool.py : Parses a gcode file
 # [2012.07.31] Mendez
+
+# Parse a series of g code moves represented by a Gcode object into a much less general however much more easily manipulated toolpath format called Tool
+# of specific interest is the class IndexDict() which can be found in util
+# the index dict is used as an intermediate datastructure between the GCODE instance input and the Tool instance output which is actially composed of a list of IndexDicts
+
+'''
+#For EXAMPLE here self is a "TOOL" and has a simple orgainztion of relevant data
+#Item is an IndxDict() instance from the Tool() instance called self
+for i,item in enumerate(self):
+    x,y,z,cmd = item[0:4]
+'''
+# [2015.08.15] Erickstad
+
 import re,sys,math
 from pprint import pprint
 from string import Template
@@ -10,6 +23,9 @@ from copy import deepcopy
 from clint.textui import colored, puts, indent, progress
 from util import error, distance, IndexDict
 from mill import Mill
+
+#needed for zcorrect to use correction surface features
+from correction_surface import CorrectionSurface
 
 AXIS='XYZIJ'
 
@@ -32,17 +48,23 @@ def origin():
 # Moves and the sort
 def noop(self,m=None,t=None):
   pass
+
 def home(self,m=None,t=None):
   self.append(origin())
   # self.append(origin()+[0]) #origin
+
 def inch(self,m=None,t=None):
   self.units = 'inch'
+
 def mm(self,m=None,t=None):
   self.unis = 'mm'
+
 def absolute(self,m=None,t=None):
   self.abs = True
+
 def relative(self,m=None,t=None):
   self.abs = False
+
 def move(self,m,cmd, z=None):
   '''Moves to location. if NaN, use previous. handles rel/abs'''
   for i,key in enumerate(m):
@@ -59,6 +81,7 @@ def move(self,m,cmd, z=None):
   # if not self.abs: loc += self[-1][:] # rel/abs
   # loc.append(t)
   # self.append(loc)
+
 def convert(self,m):
   if self.units == 'mm':
     m = [x*25.4 for x in m]
@@ -74,6 +97,8 @@ def circle(self,m,t):
   move(self, m, t)
   # FIXME
 
+'''DICTIONARY OF FUNCTIONS'''
+'''SEE DEFINITIONS ABOVE'''
 GCMD = {0:  move,
         1:  move,
         2:  circle,
@@ -85,7 +110,7 @@ GCMD = {0:  move,
         54: noop, # Word Coords
         90: absolute,
         91: relative,
-        94:noop, #FeedRate/minute
+        94: noop, #FeedRate/minute
         }
 
 
@@ -97,14 +122,11 @@ class Tool(list):
     self.units = 'inch'
     self.mills = []
     home(self)
-
     if gcode: self.build(gcode)
 
   def __repr__(self):
     '''Slightly more information when you print out this object.'''
     return '%s() : %i locations, units: %s'%(self.__class__.__name__, len(self),self.units)
-
-
 
 
   def build(self, gcode):
@@ -113,15 +135,24 @@ class Tool(list):
     for i,line in enumerate(progress.bar(gcode)):
     # for i,line in enumerate(gcode):
       if 'G' in line: # only handle the gcodes
+        # Get the G code number assign it to cmd
+        # for human readablitiy cmd should be changes to g_command_number
+        # or somehting like that
+        # however notice that it is hardcoded as a  dict key as well
+        '''copy over the relevant data x y z i j index and g_command_number'''
+        '''To an indexdict named move with the name attribute set to the string "move" '''
         cmd = line['G']
         move = IndexDict(name='move')
         for j,x in enumerate(AXIS):
           if x in line: move[x] = line[x]
         move['cmd'] = cmd
         move['index'] = line['index']
+
         try:
           fcn = GCMD[cmd]
           move.name = 'cmd[% 2i]'%cmd
+          # Try using the indexdict instance as info for the next coordinates to be attached to the toolpath
+          # by way of the function fcn selcted from the dict of functions GCMD above
           fcn(self, move, cmd)
         except KeyError:
           # raise
@@ -153,12 +184,17 @@ class Tool(list):
     '''Returns the bounding box [[xmin,xmax],[ymin,ymax],[zmin,zmax]]
     for the toolpath'''
     box = [[0.,0.],[0.,0.],[0.,0.]]
+    # for each element of the toolpath
     for item in self:
+      # for each coordinate "ax"
       for i,ax in enumerate(item):
         # print i,ax
         if item[ax] < box[i][0]: box[i][0] = item[ax]
         if item[ax] > box[i][1]: box[i][1] = item[ax]
         # if j == 2 : sys.exit()
+    # if afterwards the box has no dimensions throw an error
+    if box == [[0.,0.],[0.,0.],[0.,0.]]:
+      print 'Bounding box has no size; toolpath may not have been parsed correctly'
     return box
 
   def offset(self, offset):
@@ -334,6 +370,12 @@ class Tool(list):
   #### some commands to move / copy and otherwise change the gcode.
   def move(self,loc):
     '''Moves the toolpath from (0,0) to (loc[0],loc[1])'''
+    '''Moves the toolpath from (x_n,y_n) to (x_n+loc[0],y_n+loc[1]) for all n?'''
     for item in self:
       for i,x in enumerate(loc):
         item[i] += x
+
+  def zcorrect(self, correction_surface):
+    #correct the z position of the points on the tool path
+    for item in self:
+      item[2] += correction_surface.estimate_surface_z_at_pozition(item[0],item[1])

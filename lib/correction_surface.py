@@ -19,11 +19,13 @@ import re
 
 
 class CorrectionSurface():
-    def __init__(self,):
+    def __init__(self,surface_file_name = ''):
         self.x_step = "nan"
         self.y_step = "nan"
         self.array = []
         self.Load_Correction_Surface()
+        if surface_file_name != '':
+            self.Load_Correction_Surface(surface_file_name)
 
     def Load_Correction_Surface(self, surface_file_name = 'probe_test.out' ):
 
