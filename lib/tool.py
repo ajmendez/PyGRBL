@@ -67,7 +67,8 @@ def convert(self,m):
 def millMove(self, next, height):
   '''Move the toolbit to the next mill location'''
   last = self[-1]
-  move(self, IndexDict(last), 0, z=height) # lift off of board
+  move(self, IndexDict(last), 1, z=height) # lift off of board; move at feed rate in case we're drilling.  Ideally we'd only move at feed rate for the liftoff if we were drilling and not if we're milling, but the current structure of the code makes it rather tricky to find that out in a robust way, so for now just defaulting to always liftoff ad feed rate, which should be safe and have negligible effects on total job time
+  move(self, IndexDict(last), 0, z=height) # hack for old drawing code: lift off to same position at move speed so drawing code will put in move operations
   move(self, IndexDict(next), 0, z=height) # Move to next pos
 
 def circle(self,m,t):
@@ -315,9 +316,9 @@ class Tool(list):
       x,y,z,cmd = item[0:4]
 
       # OK this is a crappy hack to ensure that we put a nice little name before  each mill.
-      # so basically we need a move before this one, this one be a move and the next one be a mill
+      # so basically we need z>0, this one be a move and the next one be a mill
       # and then we write a nice message
-      if ([l[3] for l in self[i-1:i+2]] == [0,0,1]):
+      if ([l[3] for l in self[i:i+2]] == [0,1] and z > 0):
         lines.append('\n(Mill: %04i)'%(iMill))
         iMill += 1
       lines.append('G%02i   X%.3f Y%.3f Z%.3f'%(cmd,x,y,z))
