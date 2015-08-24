@@ -154,13 +154,3 @@ if __name__ == '__main__':
   print '%s finished in %s'%(args.name,deltaTime(start))
 
 
-
-
-
-
-
-
-
-
-
-
