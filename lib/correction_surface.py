@@ -23,9 +23,12 @@ class CorrectionSurface():
         self.x_step = "nan"
         self.y_step = "nan"
         self.array = []
-        self.Load_Correction_Surface()
         if surface_file_name != '':
+            #print 'this is the surface correcion name that init is loading'
+            #print surface_file_name
             self.Load_Correction_Surface(surface_file_name)
+        else:
+            self.Load_Correction_Surface()
 
     def Load_Correction_Surface(self, surface_file_name = 'probe_test.out' ):
 
@@ -37,7 +40,8 @@ class CorrectionSurface():
 
         #display the dataset to be used
         puts(colored.yellow('Surface Z Data Matrix'))
-        print Surface_Data
+        puts(colored.yellow(np.array_str(Surface_Data)))
+        #print Surface_Data
 
         probe_data_file = open(surface_file_name)
 
@@ -48,8 +52,8 @@ class CorrectionSurface():
             line = line.strip()
 
             if re.search('#', line,flags = re.IGNORECASE):
-                puts(colored.green('extracting scale data from file header'))
-                puts(colored.green( line))
+                #puts(colored.green('extracting scale data from file header'))
+                #puts(colored.green( line))
                 if re.search(' X_STEP:', line,flags = re.IGNORECASE):
                     #X_STEP:,0.5000
                     X_STEP_INFO = re.findall('X_STEP:,\d*\.\d*,', line, flags = re.IGNORECASE)[0]
@@ -77,6 +81,9 @@ class CorrectionSurface():
         #begin with using the nearest node to the point
         Ns_x = round(x/self.x_step)
         Ns_y = round(y/self.y_step)
+        # calcualte the boundaries
+        Nmax_x = self.array.shape[0]
+        Nmax_y = self.array.shape[1]
         #calculate distance from the nearest node
         epsilon_x= x - Ns_x*self.x_step
         epsilon_y= y - Ns_y*self.x_step
@@ -93,6 +100,26 @@ class CorrectionSurface():
         else:
             Nf_y = Ns_y + -1
             delta_y = -1.0*self.y_step
+
+        #force the data into the boundaries
+        if Ns_x<0:
+            Ns_x = 0
+        if Ns_y<0:
+            Ns_y = 0
+        if Nf_x<0:
+            Nf_x = 0
+        if Nf_y<0:
+            Nf_y = 0
+
+        if Ns_x>Nmax_x:
+            Ns_x = Nmax_x
+        if Ns_y>Nmax_y:
+            Ns_y = Nmax_y
+        if Nf_x>Nmax_x:
+            Nf_x = Nmax_x
+        if Nf_y>Nmax_y:
+            Nf_y = Nmax_y
+
         #calculate the slopes (x and y) of the plane defined by the triangle of bounding nodes
         slope_x = (self.array[Nf_x][Ns_y] - self.array[Ns_x][Ns_y])/delta_x
         slope_y = (self.array[Ns_x][Nf_y] - self.array[Ns_x][Ns_y])/delta_y

@@ -378,4 +378,4 @@ class Tool(list):
   def zcorrect(self, correction_surface):
     #correct the z position of the points on the tool path
     for item in self:
-      item[2] += correction_surface.estimate_surface_z_at_pozition(item[0],item[1])
+        item[2] += correction_surface.estimate_surface_z_at_pozition(item[0],item[1])

@@ -5,6 +5,9 @@
 #there should also be a probe_step_x value and a probe_step_y value
 #these define the distsnces between the points measured in the z_positions array
 
+# as an example of using this code in ipython
+# run -i zcorrect.py /home/mike/Desktop/greg.tap -z probe_test_2.out
+
 
 #imports
 import os, re, sys
@@ -24,16 +27,17 @@ from clint.textui import puts, colored
 import time, readline
 import numpy as np
 import re
+import argparse
 
 FILEENDING = '_mod' # file ending for optimized file.
 
 
 EXTRAARGS = dict(ext=dict(args=['-z','--zsurface'],
+                          type=str,
                           default='probe_test.out',
-                          const='probe_test.out',
-                          action='store_const',
+                          nargs = '?',
                           dest='z_surf',
-                          help='''Specify for outputing an eps file rather than a pdf.''') )
+                          help='''Specify the z zurface data file''') )
 
 
 def zcorrect_file(gfile,surface_file_name = 'probe_test.out'):
@@ -65,14 +69,22 @@ def zcorrect_file(gfile,surface_file_name = 'probe_test.out'):
     tool.build(gcode)
     # adjust the z position at each point by the given amount
     tool.zcorrect(correction_surface)
+
+    ''' the follwing doe not work. is gcode.update(tool) broken?'''
     # load the changes back into the gcode object
-    gcode.update(tool)
     # append the modified g code to the empty list called out
-    #out.append([gcode])
-    out = gcode
+    # out.append([gcode])
+    # gcode.update(tool)
+    # out = gcode
     # convert gcode to text format
-    #output = ''.join([o.getGcode(tag=args.name) for o in out])
-    output = ''.join([out.getGcode()])
+    # output = ''.join([o.getGcode(tag=args.name) for o in out])
+    # output = ''.join([out.getGcode()])
+
+    '''instead the following simgle lin suffices'''
+    '''is any info lost by doing it this way? E F M'''
+    # generate a gcode file from the tool object
+    output = tool.buildGcode()
+
     # get an output file name
     outfile = FILEENDING.join(os.path.splitext(gfile))
     print "outfile is:"
@@ -96,18 +108,35 @@ if __name__ == '__main__':
 
     args = argv.arg(description='PyGRBL gcode imaging tool',
                     getFile=True, # get gcode to process
-                    getMultiFiles=False, # accept any number of files
+                    getMultiFiles=True, # accept any number of files; WHY MUST THIS BE TRUE for it to work?
                     otherOptions=EXTRAARGS, # "Install some nice things" very descriptive!!!
                     getDevice=False) # We dont need a device
+
+    '''
+    if type(args.z_surf) == str:
+        print "using the z surface file"
+        print args.z_surf
+        surface_file_name = args.z_surf
+    else:
+        print "looking for a z correction surface file in the default name: probe_test.out"
+        surface_file_name = 'probe_test.out'
+    '''
+
+    surface_file_name = args.z_surf
+    #print "using the z surface file"
+    #print args.z_surf
 
 
     # optimize each file in the list
     for gfile in args.gcode:
         # only process things not processed before.
         # c = re.match(r'(?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap)', gfile.name)
-        c = re.match(r'(.+)(\.tap)', gfile)
+        #puts(colored.blue('Z correcting the G code file: %s'%(gfile.name)))
+        c = re.match(r'(.+)(\.tap)', gfile.name)
         # c = True # HAX and accept everything
         if c: # either a drill.tap or etch.tap
-            zcorrect_file(gfile) #args=args)
+            puts(colored.blue('Using the z surface file: %s'%(args.z_surf)))
+            zcorrect_file(gfile.name, surface_file_name) #args=args)
+
 
     print '%s finished in %s'%(args.name,deltaTime(start))
