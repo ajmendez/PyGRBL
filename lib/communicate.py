@@ -13,7 +13,7 @@ class Communicate():
     # select the right serial device
     if debug: s = FakeSerial()
     else:     s = serial.Serial(device, speed, timeout=timeout)
-    
+
     if not quiet: print '''Initializing grbl at device: %s
   Please wait 1 second for device...'''%(device)
     s.write("\r\n\r\n")
@@ -26,16 +26,17 @@ class Communicate():
     # self.run('$H')
     # self.run('G20 (Inches)')
     # self.run('G90 (Absolute)')
-    
-    
+
+
   def run(self, cmd, singleLine=False):
     '''Extends either serial device with a nice run command that prints out the
     command and also gets what the device responds with.'''
     puts(colored.blue(' Sending: [%s]'%cmd ), newline=(not singleLine))
+    out = '' # i think it is better to initialize out before sending the command
     self.write(cmd+'\n')
-    out = ''
     time.sleep(self.timeout)
     # while s.inWaiting() > 0: out += s.read(10)
+    #Why is it not self.s.inWaiting()  ????
     while self.inWaiting() > 0: out += self.readline()
     if out != '':
       if singleLine:
@@ -44,27 +45,27 @@ class Communicate():
       else:
         puts(colored.green(''.join([' | '+o+'\n' for o in out.splitlines()])))
     return out
-    
+
   def sendreset(self):
       '''Sends crtl-x which is the reset key ::
       \030  24  CAN  \x18  ^X    (Cancel)
       '''
       self.s.write(24)
-      
+
   def reset(self):
       '''sends crtl-x to grbl to reset it -- clean up in the future'''
       self.s.write(24)
 
   def __enter__(self):
     return self
-  
+
   def __exit__(self, type, value, traceback):
     #self.s.setDTR(False)
     #time.sleep(0.022)
     #self.s.setDTR(True)
     #self.s.close()
     return isinstance(value, TypeError)
-  
+
   def __getattr__(self, name):
     '''if no command here, see if it is in serial.'''
     try:
@@ -76,14 +77,14 @@ class Communicate():
 
 
 class FakeSerial():
-    '''This is a fake serial device that mimics a true serial devie and 
+    '''This is a fake serial device that mimics a true serial devie and
     does fake read/write.'''
     def __init__(self):
         '''init the fake serial and print out ok'''
         self.waiting=1  # If we are waiting
         self.ichar=0    # index of the character that we are on.
         self.msg='ok'   # the message that we print when we get any command
-    
+
     def __getattr__(self, name):
         print 'DEBUG SERIAL: %s'%(name)
         return self.p

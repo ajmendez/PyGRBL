@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # visualize.py : A set of nice modifications for gcode
-# [2012.08.21] - Mendez 
+# [2012.08.21] - Mendez
 import os, re, sys
 from math import ceil
 from datetime import datetime
@@ -30,12 +30,12 @@ def main(gfile, args=None):
 	# Read in the gcode
 	gcode = GCode(gfile, limit=None)
 	gcode.parse()
-	
+
 	# parse the code into an array of tool moves
 	tool = Tool(gcode)
 	tool.uniq()
 	box = tool.boundBox()
-	
+
 	# proces and save image
 	ext = args.ext if args is not None else '.pdf'
 	outfile = os.path.splitext(gfile.name)[0] + FILEENDING + ext
@@ -71,4 +71,3 @@ if __name__ == '__main__':
 	    main(gfile, args=args)
 
 	print '%s finished in %s'%(args.name,deltaTime(start))
-  

@@ -15,7 +15,7 @@ args = argv.arg(description='Simple python grbl command prompt for debuging the 
 with Communicate(args.device, args.speed, timeout=args.timeout,
                  debug=args.debug,
                  quiet=args.quiet) as serial:
-  
+
   # now we send commands to the grbl, and wait waitTime for some response.
   while True:
     # Get some command
@@ -26,7 +26,7 @@ with Communicate(args.device, args.speed, timeout=args.timeout,
         if x in ['~']: serial.run('~\n?')
         # run it if is not a quit switch
         serial.run(x)
-        
+
     except KeyboardInterrupt:
         puts(colored.red('Emergency Feed Hold.  Enter "~" to continue'))
         serial.run('!\n?')

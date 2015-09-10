@@ -47,34 +47,34 @@ class GCode(list):
     self.filename = filename
     self.lines = lines
     # self.ready = False
-  
+
   # def append(self,item):
   #   '''add the next nice to the object'''
   #   if self.ready : self.ready = False
   #   super(GCode, self).append(item)
-  
+
   def parse(self):
     '''By default .parse() grabs only the G## commands for creating toolpaths in some space
     if you need everything use .parseall()'''
     everything = self._parse()
     for item in everything:
       toappend = False
-      for cmd in CMDS: 
-        if cmd in item: 
+      for cmd in CMDS:
+        if cmd in item:
           toappend=True
-      if toappend: 
+      if toappend:
         self.append(item)
-  
+
   def parseAll(self):
     '''Gets everything so that we can print it back out'''
     everything = self._parse()
     for item in everything:
       self.append(item)
-  
+
   def _parse(self):
     ''' [INTERNAL] convert the readlines into a parsed set of commands and values'''
     puts(colored.blue('Parsing gCode'))
-    
+
     comment = r'\(.*?\)'
     whitespace = r'\s'
     command = r''.join([r'(?P<%s>%s(?P<%snum>-?\d+(?P<%sdecimal>\.?)\d*))?'%(c,c,c,c) for c in CMDS])
@@ -90,7 +90,7 @@ class GCode(list):
 
       # Grab the commands
       c = re.match(command,l)
-      
+
       # output commands to a nice dict
       out = {}
       out['index'] = i
@@ -105,10 +105,10 @@ class GCode(list):
       if len(out) > 0:
         output.append(out)
     return output
-      #     
+      #
       # if len(out) > 0:
       #   self.append(out)
-  
+
   def update(self,tool):
     '''Updates the gcode with a toolpath only does x,y'''
     UPDATE = 'xy'
@@ -120,17 +120,17 @@ class GCode(list):
           if u.upper() in self[x[4]]:
             self[x[4]][u.upper()] = x[UPDATE.index(u)]
         # print self[x[4]]
-        
-          # print self[x[4]], 
-          # print u.upper(), 
+
+          # print self[x[4]],
+          # print u.upper(),
           # print self[x[4]][u.upper()]
           # print self[x[4]][u.toupper()]#, x[UPDATE.index(u)]
           # print self[x[4]][u],x[UPDATE.index(u)]
-            
-  
+
+
   def copy(self):
     return deepcopy(self)
-  
+
   def getGcode(self, tag=__name__, start=None):
     lines = []
     for i,line in enumerate(self):
@@ -147,5 +147,3 @@ class GCode(list):
                   tag=tag)
     params['startpos'] = '  G00 X%.3f Y%.3f'%(start[0],start[1]) if start else ''
     return Template(TEMPLATE).substitute(params)
-    
-      

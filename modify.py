@@ -8,7 +8,8 @@ from lib.gcode import GCode
 from lib.tool import Tool
 from lib.util import deltaTime, error, convertUnits
 from clint.textui import puts,colored
-
+# HELLO WORLD
+#THESE FILES ARE NOT THE SAME!
 
 FILEENDING = '_mod' # file ending for optimized file.
 
@@ -18,22 +19,22 @@ OPTIONS = [
        default=None,
        type=str,
        nargs=1,
-       help='''Move the origin to a new point. 
+       help='''Move the origin to a new point.
                Applied before rotation.
-               Specify Units at the end of the x,y pos. 
+               Specify Units at the end of the x,y pos.
                Example: "-m 0.1,0.2in".'''),
   dict(args=['-r', '--rotate'],
        default=None,
        type=float,
-       help='''Rotate the gcode about the origin. 
-               Applied after a Move. 
+       help='''Rotate the gcode about the origin.
+               Applied after a Move.
                In float degrees.'''),
   dict(args=['-c', '--copy'],
        default=None,
        type=str,
        nargs='+',
-       help='''Copy the part from the origin to points. 
-               Applied before rotation. 
+       help='''Copy the part from the origin to points.
+               Applied before rotation.
                Specify Units after each set.
                Example: "-c 0.2,0.2in 20,20mil".'''),
   dict(args=['-x','--replicate'],
@@ -45,29 +46,34 @@ OPTIONS = [
                Example: "-x 2,2" ''')
 ]
 
-
+#this is a very different parse from the gcode class parse
+#it is for parsing user modifications
 def parse(move, getUnits=False, defaultUnit='in'):
-  '''For Move, Copy, and Replicate, This function evaluates the user input, grabs 
-  any x,y values and if getUnits is passed gets the units.  Parses any x,y, and 
+  '''For Move, Copy, and Replicate, This function evaluates the user input, grabs
+  any x,y values and if getUnits is passed gets the units.  Parses any x,y, and
   converts the units to inches, and then outputs an array of the locations to
   move, copy or whatever.  You can use this with an int input (replicate), but
   make sure to cast it to an int.'''
   if isinstance(move, str):
     move = [move]
+  #does [no unit specified] need escape chars \[  \]?
+  # no because r''
   units = r'(?P<units>in|mil|mm|[NoUnitSpecified]?)' if getUnits else r''
   out = []
   for m in move:
+    # remove all of the white space
     m = re.sub(r'\s','',m).strip()
+    #
     g = re.match(r'(?P<x>-?\d*\.?\d*)\,(?P<y>-?\d*\.?\d*)'+units, m, re.I)
-    if not g: 
+    if not g:
       error('Argument Parse Failed on [%s] failed! Check the arguments'%(m))
-    
+
     # default to inches or a specific unit
     if (g.group('units') is None) or (len(g.group('units')) == 0):
       unit = defaultUnit
     else:
       unit = g.group('units')
-    
+
     # Ok prepare them for output
     item = map(float,map(g.group,['x','y']))
     if getUnits: item = map(convertUnits,item,[unit]*2)
@@ -79,34 +85,35 @@ def parse(move, getUnits=False, defaultUnit='in'):
 
 
 def mod(gfile):
-  '''For each of the files to process either rotate, move, copy, or 
+  '''For each of the files to process either rotate, move, copy, or
   replicate the code.  General idea:
     read in ascii
     Process into a toolpath list.
     modify.
     Write out toolpath.'''
-  
+
   start = datetime.now()
   puts(colored.blue('Modifying file: %s\n Started: %s'%(gfile.name,datetime.now())))
-  
+
   # Parse the gcode.
   gcode = GCode(gfile)
   gcode.parseAll()
-  
+
   # Create a toolpath from the gcode
   # add in the index so that we can match it to the gcode
-  
-  
+
+
   out = []
   if args.move:
     loc = parse(args.move, getUnits=True) # only one move at a time.
     puts(colored.blue('Moving!\n    (0,0) -> (%.3f,%.3f)'%(loc[0],loc[1])))
     tool = Tool()
+    # is the addIndex atribut even used any longer?
     tool.build(gcode, addIndex=True)
     tool.move(loc) # ok well this should work
     gcode.update(tool)
     out.append([loc,gcode])
-    
+
   if args.copy:
     locs = parse(args.copy, getUnits=True)
     puts(colored.blue('Copying!'))
@@ -114,22 +121,23 @@ def mod(gfile):
       puts(colored.blue('    (0,0) -> (%.3f,%.3f)'%(loc[0],loc[1])))
       gc = gcode.copy()
       tool = Tool()
+      # is the addIndex atribut even used any longer?
       tool.build(gc, addIndex=True)
       tool.move(loc)
       gc.update(tool)
       out.append([loc,gc])
-      
+
   # if args.replicate:
   #   nxy = map(int,parse(args.replicate)[0]) # ensure int, and only one
   #   puts(colored.blue('Replicating!\n     nx=%i, ny=%i)'%(nxy[0],nxy[1])))
-  
+
   output = ''.join([o.getGcode(tag=args.name,start=l) for l,o in out])
-  
+
   outfile = FILEENDING.join(os.path.splitext(gfile.name))
   puts(colored.green('Writing: %s'%outfile))
   with open(outfile,'w') as f:
     f.write(output)
-  
+
   # how long did this take?
   puts(colored.green('Time to completion: %s'%(deltaTime(start))))
   print
