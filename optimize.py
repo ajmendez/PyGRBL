@@ -18,7 +18,7 @@ Z_DRILL =  -63 # mil [-63] : Mill depth for full drill holes
 
 
 # The Optimize function
-def opt(gfile, offset=(0.0,0.0,0.0), rotate=False):
+def opt(gfile, offset=(0.0,0.0,0.0), rotate=False, isDrill=False):
   '''Optimization core function:
   Reads in gCode ascii file.
   Processes gcode into toolpath list
@@ -42,7 +42,7 @@ def opt(gfile, offset=(0.0,0.0,0.0), rotate=False):
   tool.groupMills()
   puts(colored.blue('Toolpath length: %.2f inches, (mill only: %.2f)'%(tool.length(),tool.millLength())))
   if args.setMillHeight:
-    tool.setMillHeight(Z_MILL,Z_SPOT)
+    tool.setMillHeight(Z_MILL,(Z_DRILL if isDrill else Z_SPOT))
   tool.uniqMills()
   
   # This starts the optimization process:
@@ -149,18 +149,8 @@ if __name__ == '__main__':
     # c = re.match(r'(?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap)', gfile.name)
     c = re.match(r'(.+)((?P<drill>\.drill\.tap)|(?P<etch>\.etch\.tap))', gfile.name)
     if c: # either a drill.tap or etch.tap file
-      opt(gfile, offset=(args.offsetx, args.offsety, args.offsetz), rotate=args.rotate)
+      opt(gfile, offset=(args.offsetx, args.offsety, args.offsetz), rotate=args.rotate, isDrill=(c.group('drill') > 0))
 
   print '%s finished in %s'%(args.name,deltaTime(start))
-
-
-
-
-
-
-
-
-
-
 
 
